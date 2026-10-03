@@ -1,0 +1,1436 @@
+<!DOCTYPE html>
+<!--
+  ================================================================
+  di.froggy — сайт-визитка таролога. Один файл: HTML + CSS + JS.
+  ================================================================
+  ГДЕ ЧТО МЕНЯТЬ (ищи по этим меткам в коде):
+
+  1. SCHEDULE_CONFIG (в <script>, начало) — расписание свободных окон:
+     часы приёма, количество дней вперёд, занятые слоты по смещению дня.
+  2. PRICING_CONFIG (в <script>) — цены в $ (сейчас 7 / 10 / 15).
+  3. INSTAGRAM_URL (в <script>) — ссылка на Instagram (сейчас di.froggy).
+  4. I18N.ru.reviews / I18N.en.reviews — тексты отзывов-заготовок.
+  5. I18N (целиком) — словарь переводов RU/EN: все тексты сайта.
+  ================================================================
+-->
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title id="doc-title">di.froggy — Таро-консультации онлайн</title>
+<meta id="meta-description" name="description" content="Онлайн-консультации с тарологом. 5 лет практики, бережно и честно, без запугивания.">
+<meta id="og-title" property="og:title" content="di.froggy — Таро-консультации онлайн">
+<meta id="og-description" property="og:description" content="Онлайн-консультации с тарологом. 5 лет практики, бережно и честно, без запугивания.">
+<meta property="og:type" content="website">
+<meta name="theme-color" content="#1a0b2e">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@500;600;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+/* ============ CSS VARIABLES / DESIGN SYSTEM ============ */
+:root{
+  --font-heading:'Playfair Display',Georgia,'Times New Roman',serif;
+  --font-body:'Inter',-apple-system,Segoe UI,Arial,sans-serif;
+
+  --c-purple:#7c3aed;
+  --c-purple-dark:#4c1d95;
+  --c-fuchsia:#d946ef;
+  --c-turquoise:#22d3ee;
+  --c-gold:#f0b94d;
+
+  --c-bg-dark:#160a2b;
+  --c-bg-dark2:#1f1040;
+  --c-bg-light:#fbf7ff;
+  --c-bg-light2:#ffffff;
+
+  --c-text-dark:#211334;
+  --c-text-light:#f6f1ff;
+  --c-muted-dark:#5d5478;
+  --c-muted-light:#c9bfe3;
+
+  --grad-main:linear-gradient(135deg,#7c3aed 0%,#d946ef 50%,#22d3ee 100%);
+  --grad-gold:linear-gradient(135deg,#f0b94d,#f6d78a);
+  --grad-dark:linear-gradient(160deg,#1a0b2e 0%,#2a1050 55%,#19082e 100%);
+
+  --radius-lg:24px;
+  --radius-md:16px;
+  --radius-sm:10px;
+
+  --sp-1:8px;--sp-2:16px;--sp-3:24px;--sp-4:32px;--sp-5:48px;--sp-6:64px;--sp-7:96px;
+
+  --shadow-glow:0 8px 40px rgba(217,70,239,.25);
+  --shadow-card:0 10px 30px rgba(20,8,40,.12);
+  --shadow-card-dark:0 10px 30px rgba(0,0,0,.35);
+
+  --container-w:1180px;
+  --header-h:64px;
+  --safe-b:env(safe-area-inset-bottom,0px);
+  --safe-t:env(safe-area-inset-top,0px);
+}
+
+*{box-sizing:border-box;}
+html{scroll-behavior:smooth;-webkit-text-size-adjust:100%;}
+@media (prefers-reduced-motion:reduce){
+  html{scroll-behavior:auto;}
+  *,*::before,*::after{animation-duration:.001ms!important;animation-iteration-count:1!important;transition-duration:.001ms!important;scroll-behavior:auto!important;}
+}
+body{
+  margin:0;
+  font-family:var(--font-body);
+  color:var(--c-text-dark);
+  background:var(--c-bg-light);
+  font-size:16px;
+  line-height:1.6;
+  -webkit-font-smoothing:antialiased;
+  overflow-x:hidden;
+}
+img,svg{display:block;max-width:100%;}
+a{color:inherit;text-decoration:none;}
+button{font-family:inherit;}
+h1,h2,h3{font-family:var(--font-heading);line-height:1.25;margin:0 0 var(--sp-2);font-weight:700;}
+h1{font-size:clamp(2rem,6vw,3.4rem);line-height:1.15;}
+h2{font-size:clamp(1.6rem,4.2vw,2.5rem);}
+h3{font-size:clamp(1.15rem,2.6vw,1.5rem);}
+p{margin:0 0 var(--sp-2);}
+.container{max-width:var(--container-w);margin:0 auto;padding:0 var(--sp-3);}
+.section{padding:var(--sp-6) 0;position:relative;}
+.section-dark{background:var(--grad-dark);color:var(--c-text-light);}
+.section-dark .muted{color:var(--c-muted-light);}
+.muted{color:var(--c-muted-dark);}
+.center{text-align:center;}
+.visually-hidden{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;}
+.skip-link{position:absolute;left:-999px;top:0;background:#fff;color:#000;padding:8px 14px;z-index:999;border-radius:0 0 8px 0;}
+.skip-link:focus{left:0;}
+
+/* decorative stars/moon */
+.stars{position:absolute;inset:0;overflow:hidden;pointer-events:none;z-index:0;}
+.stars span{position:absolute;background:#fff;border-radius:50%;opacity:.55;animation:twinkle 3.5s ease-in-out infinite;}
+@keyframes twinkle{0%,100%{opacity:.2;}50%{opacity:.85;}}
+.moon-deco{position:absolute;right:6%;top:8%;width:90px;height:90px;border-radius:50%;background:radial-gradient(circle at 35% 35%,#fff6da,var(--c-gold) 70%);box-shadow:0 0 50px rgba(240,185,77,.55);opacity:.85;z-index:0;}
+
+:focus-visible{outline:3px solid var(--c-turquoise);outline-offset:2px;border-radius:4px;}
+
+/* ============ BUTTONS ============ */
+.btn{
+  display:inline-flex;align-items:center;justify-content:center;gap:8px;
+  min-height:44px;padding:12px 24px;border-radius:999px;border:none;
+  font-weight:600;font-size:16px;cursor:pointer;text-align:center;
+  transition:transform .15s ease,box-shadow .15s ease,opacity .15s ease;
+  line-height:1.2;
+}
+.btn-primary{background:var(--grad-main);color:#fff;box-shadow:var(--shadow-glow);}
+.btn-primary:hover{transform:translateY(-2px);box-shadow:0 12px 32px rgba(217,70,239,.4);}
+.btn-primary:active{transform:translateY(0);}
+.btn-primary:disabled{opacity:.5;cursor:not-allowed;transform:none;box-shadow:none;}
+.btn-secondary{background:rgba(255,255,255,.08);color:var(--c-text-light);border:1.5px solid rgba(255,255,255,.35);}
+.btn-secondary:hover{background:rgba(255,255,255,.16);}
+.section:not(.section-dark) .btn-secondary{background:rgba(124,58,237,.08);color:var(--c-purple-dark);border:1.5px solid rgba(124,58,237,.3);}
+.btn-outline{background:transparent;border:1.5px solid var(--c-purple);color:var(--c-purple);}
+.btn-lg{min-height:52px;padding:14px 32px;font-size:17px;}
+.btn-block{width:100%;}
+.btn.loading{position:relative;color:transparent!important;pointer-events:none;}
+.btn.loading::after{
+  content:"";position:absolute;width:18px;height:18px;border-radius:50%;
+  border:2.5px solid rgba(255,255,255,.4);border-top-color:#fff;
+  animation:spin .7s linear infinite;
+}
+@keyframes spin{to{transform:rotate(360deg);}}
+
+/* ============ HEADER ============ */
+.site-header{
+  position:sticky;top:0;z-index:100;
+  padding-top:var(--safe-t);
+  background:rgba(22,10,43,.82);
+  backdrop-filter:blur(10px);
+  border-bottom:1px solid rgba(255,255,255,.08);
+}
+.header-inner{display:flex;align-items:center;justify-content:space-between;height:var(--header-h);gap:var(--sp-2);}
+.logo{font-family:var(--font-heading);font-size:22px;font-weight:700;color:#fff;letter-spacing:.5px;}
+.main-nav{display:none;gap:var(--sp-3);}
+.main-nav a{color:var(--c-muted-light);font-weight:500;font-size:15px;padding:8px 2px;transition:color .15s;}
+.main-nav a:hover{color:#fff;}
+.header-actions{display:flex;align-items:center;gap:10px;}
+.lang-toggle{
+  display:flex;align-items:center;gap:6px;min-width:44px;min-height:44px;padding:4px 10px;
+  border-radius:999px;border:1.5px solid rgba(255,255,255,.25);background:rgba(255,255,255,.06);
+  color:#fff;cursor:pointer;
+}
+.lang-toggle:hover{background:rgba(255,255,255,.14);}
+.lang-flag{width:22px;height:15px;border-radius:3px;overflow:hidden;flex:none;}
+.lang-flag svg{width:100%;height:100%;display:block;}
+.lang-code{font-size:13px;font-weight:700;letter-spacing:.5px;}
+.btn-header-cta{display:none;}
+.burger-btn{
+  display:flex;flex-direction:column;justify-content:center;gap:5px;
+  width:44px;height:44px;border:none;background:transparent;cursor:pointer;padding:0;
+}
+.burger-btn span{display:block;width:24px;height:2.5px;background:#fff;border-radius:2px;margin:0 auto;transition:transform .25s,opacity .25s;}
+.burger-btn[aria-expanded="true"] span:nth-child(1){transform:translateY(7.5px) rotate(45deg);}
+.burger-btn[aria-expanded="true"] span:nth-child(2){opacity:0;}
+.burger-btn[aria-expanded="true"] span:nth-child(3){transform:translateY(-7.5px) rotate(-45deg);}
+
+.mobile-menu{
+  max-height:0;overflow:hidden;background:#1a0b2e;border-bottom:1px solid rgba(255,255,255,.08);
+  transition:max-height .3s ease;
+}
+.mobile-menu.open{max-height:480px;}
+.mobile-menu-inner{padding:var(--sp-2) var(--sp-3) var(--sp-4);display:flex;flex-direction:column;gap:4px;}
+.mobile-menu a.mobile-link{
+  display:block;padding:12px 4px;color:var(--c-text-light);font-size:17px;font-weight:500;
+  border-bottom:1px solid rgba(255,255,255,.06);
+}
+.mobile-menu .btn{margin-top:var(--sp-2);}
+
+/* ============ HERO ============ */
+.hero{background:var(--grad-dark);color:var(--c-text-light);padding:var(--sp-7) 0 var(--sp-6);overflow:hidden;}
+.hero-inner{position:relative;z-index:1;max-width:760px;}
+.hero-badge{
+  display:inline-flex;align-items:center;gap:8px;background:rgba(240,185,77,.12);
+  border:1px solid rgba(240,185,77,.4);color:var(--c-gold);border-radius:999px;
+  padding:6px 16px;font-size:14px;font-weight:600;margin-bottom:var(--sp-3);
+}
+.hero h1{color:#fff;margin-bottom:var(--sp-2);}
+.hero .lead{font-size:clamp(1rem,2.4vw,1.2rem);color:var(--c-muted-light);max-width:600px;margin-bottom:var(--sp-4);}
+.hero-actions{display:flex;flex-wrap:wrap;gap:14px;}
+
+/* ============ FADE-IN ANIM ============ */
+.fade-up{opacity:0;transform:translateY(24px);transition:opacity .6s ease,transform .6s ease;}
+.fade-up.visible{opacity:1;transform:none;}
+
+/* ============ ABOUT ============ */
+.about-grid{display:flex;flex-direction:column;gap:var(--sp-4);align-items:flex-start;}
+.about-badges{display:flex;flex-wrap:wrap;gap:10px;}
+.badge-pill{
+  display:inline-flex;align-items:center;gap:6px;padding:8px 16px;border-radius:999px;
+  background:rgba(34,211,238,.12);border:1px solid rgba(34,211,238,.35);font-size:14px;font-weight:600;
+}
+
+/* ============ CARDS GRID (audience) ============ */
+.cards-grid{display:grid;grid-template-columns:1fr;gap:var(--sp-3);margin-top:var(--sp-4);}
+.aud-card{
+  background:#fff;border-radius:var(--radius-md);padding:var(--sp-3);box-shadow:var(--shadow-card);
+  border:1px solid rgba(124,58,237,.08);
+}
+.aud-card .icon{font-size:30px;margin-bottom:10px;display:block;}
+.aud-card p{margin:0;font-weight:500;color:var(--c-text-dark);}
+
+/* ============ PRICING ============ */
+.pricing-sub{max-width:560px;margin:0 auto var(--sp-2);text-align:center;}
+.pricing-grid{display:grid;grid-template-columns:1fr;gap:var(--sp-3);margin-top:var(--sp-4);}
+.price-card{
+  position:relative;background:rgba(255,255,255,.04);border:1.5px solid rgba(255,255,255,.12);
+  border-radius:var(--radius-lg);padding:var(--sp-4) var(--sp-3);backdrop-filter:blur(6px);
+  display:flex;flex-direction:column;gap:var(--sp-2);
+}
+.price-card.popular{border-color:var(--c-fuchsia);box-shadow:0 0 0 1px var(--c-fuchsia),var(--shadow-glow);}
+.price-card.best{border-color:var(--c-gold);box-shadow:0 0 0 1px var(--c-gold),0 8px 40px rgba(240,185,77,.25);background:rgba(240,185,77,.06);}
+.price-badge{
+  position:absolute;top:-14px;left:50%;transform:translateX(-50%);
+  padding:5px 16px;border-radius:999px;font-size:13px;font-weight:700;white-space:nowrap;
+}
+.price-card.popular .price-badge{background:var(--grad-main);color:#fff;}
+.price-card.best .price-badge{background:var(--grad-gold);color:#2a1a00;}
+.price-card h3{margin-bottom:4px;}
+.price-amount{font-family:var(--font-heading);font-size:2.4rem;font-weight:800;color:#fff;}
+.price-per{font-size:13px;color:var(--c-gold);font-weight:600;}
+.price-features{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:8px;flex:1;}
+.price-features li{display:flex;gap:8px;align-items:flex-start;font-size:14.5px;color:var(--c-muted-light);}
+.price-features li::before{content:"✦";color:var(--c-turquoise);flex:none;margin-top:1px;}
+
+/* ============ FAQ ============ */
+.faq-tabs{display:flex;gap:10px;overflow-x:auto;padding-bottom:6px;margin:var(--sp-3) 0;-webkit-overflow-scrolling:touch;scrollbar-width:thin;}
+.faq-tabs::-webkit-scrollbar{height:4px;}
+.faq-tab{
+  flex:none;display:flex;align-items:center;gap:6px;padding:10px 18px;border-radius:999px;
+  border:1.5px solid rgba(124,58,237,.25);background:#fff;color:var(--c-text-dark);
+  font-weight:600;font-size:14.5px;cursor:pointer;min-height:44px;white-space:nowrap;
+}
+.faq-tab[aria-selected="true"]{background:var(--grad-main);color:#fff;border-color:transparent;}
+.faq-list{display:flex;flex-direction:column;gap:12px;}
+.faq-item{border:1px solid rgba(124,58,237,.15);border-radius:var(--radius-md);background:#fff;overflow:hidden;}
+.faq-q{
+  width:100%;display:flex;align-items:center;justify-content:space-between;gap:12px;
+  padding:16px 18px;background:none;border:none;text-align:left;cursor:pointer;min-height:44px;
+  font-weight:600;font-size:15.5px;color:var(--c-text-dark);
+}
+.faq-q .faq-tariff{
+  flex:none;font-size:12px;font-weight:700;color:var(--c-purple);background:rgba(124,58,237,.1);
+  border-radius:999px;padding:3px 10px;white-space:nowrap;
+}
+.faq-q .chevron{flex:none;transition:transform .25s;color:var(--c-muted-dark);}
+.faq-item[data-open="true"] .chevron{transform:rotate(180deg);}
+.faq-a{max-height:0;overflow:hidden;transition:max-height .3s ease;}
+.faq-a-inner{padding:0 18px 16px;color:var(--c-muted-dark);font-size:14.5px;}
+.faq-hint{margin-top:var(--sp-3);text-align:center;color:var(--c-muted-dark);font-size:14.5px;}
+
+/* ============ BOOKING ============ */
+.date-strip{display:flex;gap:10px;overflow-x:auto;padding:4px 0 10px;-webkit-overflow-scrolling:touch;}
+.date-chip{
+  flex:none;min-width:72px;min-height:64px;border-radius:var(--radius-sm);border:1.5px solid rgba(255,255,255,.18);
+  background:rgba(255,255,255,.05);color:var(--c-text-light);display:flex;flex-direction:column;
+  align-items:center;justify-content:center;cursor:pointer;gap:2px;padding:6px;
+}
+.date-chip .dow{font-size:12px;text-transform:capitalize;color:var(--c-muted-light);}
+.date-chip .dnum{font-size:17px;font-weight:700;}
+.date-chip[aria-selected="true"]{background:var(--grad-main);border-color:transparent;}
+.slots-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin:var(--sp-3) 0 var(--sp-4);}
+.slot-btn{
+  min-height:44px;border-radius:var(--radius-sm);border:1.5px solid rgba(255,255,255,.18);
+  background:rgba(255,255,255,.05);color:var(--c-text-light);font-weight:600;cursor:pointer;font-size:15px;
+}
+.slot-btn[aria-selected="true"]{background:var(--grad-main);border-color:transparent;}
+.slot-btn:disabled{opacity:.3;cursor:not-allowed;text-decoration:line-through;}
+.booking-form{display:flex;flex-direction:column;gap:var(--sp-2);max-width:620px;margin-top:var(--sp-4);}
+.field{display:flex;flex-direction:column;gap:6px;}
+.field label{font-size:14px;font-weight:600;color:var(--c-muted-light);}
+.field input[type="text"],.field select,.field textarea{
+  min-height:48px;border-radius:var(--radius-sm);border:1.5px solid rgba(255,255,255,.18);
+  background:rgba(255,255,255,.06);color:#fff;padding:10px 14px;font-size:16px;font-family:inherit;width:100%;
+}
+.field textarea{min-height:100px;resize:vertical;}
+.field input::placeholder,.field textarea::placeholder{color:var(--c-muted-light);opacity:.7;}
+.field select option{color:#000;}
+.field-error{color:#ff8fae;font-size:13px;min-height:16px;}
+.field.has-error input,.field.has-error select,.field.has-error textarea{border-color:#ff5c7c;}
+.checkbox-field{display:flex;align-items:flex-start;gap:10px;}
+.checkbox-field input{width:22px;height:22px;flex:none;margin-top:2px;accent-color:var(--c-fuchsia);}
+.checkbox-field label{font-size:14px;color:var(--c-muted-light);font-weight:400;}
+.selected-summary{
+  background:rgba(255,255,255,.06);border:1px dashed rgba(255,255,255,.25);border-radius:var(--radius-sm);
+  padding:12px 16px;font-size:14.5px;color:var(--c-muted-light);
+}
+.confirmation-screen{
+  margin-top:var(--sp-4);background:rgba(255,255,255,.07);border:1.5px solid rgba(240,185,77,.4);
+  border-radius:var(--radius-lg);padding:var(--sp-4);text-align:center;
+}
+.confirmation-screen.hidden,.booking-form.hidden{display:none;}
+.confirmation-screen .icon-big{font-size:46px;margin-bottom:10px;}
+.copy-note{font-size:13px;color:var(--c-gold);margin-top:8px;}
+
+/* ============ PROCESS ============ */
+.process-grid{display:grid;grid-template-columns:1fr;gap:var(--sp-3);margin-top:var(--sp-4);}
+.process-step{text-align:center;padding:var(--sp-3);}
+.process-step .num{
+  width:52px;height:52px;border-radius:50%;background:var(--grad-main);color:#fff;
+  display:flex;align-items:center;justify-content:center;font-weight:700;font-size:20px;margin:0 auto 12px;
+  font-family:var(--font-heading);
+}
+.process-step .icon{font-size:26px;margin-bottom:8px;}
+
+/* ============ REVIEWS ============ */
+.reviews-note{text-align:center;font-size:13.5px;color:var(--c-gold);margin-bottom:var(--sp-3);}
+.reviews-grid{display:grid;grid-template-columns:1fr;gap:var(--sp-3);}
+.review-card{background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.12);border-radius:var(--radius-md);padding:var(--sp-3);}
+.review-card .stars-row{color:var(--c-gold);margin-bottom:8px;font-size:15px;}
+.review-card .name{font-weight:700;margin-top:10px;}
+.review-card .placeholder-tag{display:inline-block;margin-top:10px;font-size:11.5px;color:var(--c-muted-light);border:1px dashed rgba(255,255,255,.3);border-radius:6px;padding:2px 8px;}
+
+/* ============ DISCLAIMER ============ */
+.disclaimer{background:var(--c-bg-light2);}
+.disclaimer p{font-size:13px;color:var(--c-muted-dark);max-width:800px;margin:0 auto;text-align:center;}
+
+/* ============ CONTACTS ============ */
+.contacts{text-align:center;}
+.contacts h2{color:#fff;}
+
+/* ============ FOOTER ============ */
+.site-footer{background:#120822;color:var(--c-muted-light);padding:var(--sp-4) 0 calc(var(--sp-4) + var(--safe-b));font-size:13.5px;text-align:center;}
+.site-footer a{color:var(--c-turquoise);font-weight:600;}
+.site-footer .foot-disclaimer{max-width:700px;margin:10px auto 0;font-size:12px;opacity:.85;}
+
+/* ============ MOBILE STICKY BAR + FLOATING IG ============ */
+.mobile-sticky-bar{
+  position:fixed;left:0;right:0;bottom:0;z-index:90;background:rgba(22,10,43,.95);
+  backdrop-filter:blur(10px);border-top:1px solid rgba(255,255,255,.1);
+  padding:10px var(--sp-3) calc(10px + var(--safe-b));
+}
+.floating-ig-btn{
+  position:fixed;right:16px;bottom:calc(84px + var(--safe-b));z-index:91;
+  width:52px;height:52px;border-radius:50%;background:var(--grad-main);
+  display:flex;align-items:center;justify-content:center;box-shadow:var(--shadow-glow);
+}
+.floating-ig-btn svg{width:26px;height:26px;}
+
+/* ============ RESPONSIVE ============ */
+@media (min-width:700px){
+  .cards-grid{grid-template-columns:repeat(2,1fr);}
+  .pricing-grid{grid-template-columns:repeat(3,1fr);}
+  .process-grid{grid-template-columns:repeat(2,1fr);}
+  .reviews-grid{grid-template-columns:repeat(3,1fr);}
+}
+@media (min-width:860px){
+  .main-nav{display:flex;}
+  .btn-header-cta{display:inline-flex;}
+  .burger-btn{display:none;}
+  .mobile-menu{display:none;}
+  .mobile-sticky-bar{display:none;}
+  .cards-grid{grid-template-columns:repeat(3,1fr);}
+  .process-grid{grid-template-columns:repeat(4,1fr);}
+  .slots-grid{grid-template-columns:repeat(5,1fr);}
+  body{padding-bottom:0;}
+}
+@media (max-width:859px){
+  body{padding-bottom:calc(68px + var(--safe-b));}
+  .floating-ig-btn{bottom:calc(84px + var(--safe-b));}
+}
+@media (min-width:1100px){
+  .slots-grid{grid-template-columns:repeat(6,1fr);}
+}
+</style>
+</head>
+<body>
+
+<a href="#main" class="skip-link" data-i18n="a11y.skip">Перейти к основному содержимому</a>
+
+<header class="site-header">
+  <div class="container header-inner">
+    <a href="#hero" class="logo">di.froggy</a>
+    <nav class="main-nav" aria-label="Основная навигация">
+      <a href="#about" data-i18n="nav.about">Обо мне</a>
+      <a href="#pricing" data-i18n="nav.services">Услуги</a>
+      <a href="#faq" data-i18n="nav.faq">Вопросы</a>
+      <a href="#booking" data-i18n="nav.booking">Запись</a>
+      <a href="#contacts" data-i18n="nav.contacts">Контакты</a>
+    </nav>
+    <div class="header-actions">
+      <button type="button" id="lang-toggle" class="lang-toggle" data-i18n-aria="nav.langAria" aria-label="Переключить язык">
+        <span class="lang-flag" id="lang-flag"></span>
+        <span class="lang-code" id="lang-code">RU</span>
+      </button>
+      <a href="#booking" class="btn btn-primary btn-header-cta" data-i18n="nav.bookBtn">Записаться</a>
+      <button type="button" id="burger-btn" class="burger-btn" aria-label="Открыть меню" aria-expanded="false" aria-controls="mobile-menu">
+        <span></span><span></span><span></span>
+      </button>
+    </div>
+  </div>
+  <div class="mobile-menu" id="mobile-menu">
+    <div class="mobile-menu-inner">
+      <a href="#about" class="mobile-link" data-i18n="nav.about">Обо мне</a>
+      <a href="#pricing" class="mobile-link" data-i18n="nav.services">Услуги</a>
+      <a href="#faq" class="mobile-link" data-i18n="nav.faq">Вопросы</a>
+      <a href="#booking" class="mobile-link" data-i18n="nav.booking">Запись</a>
+      <a href="#contacts" class="mobile-link" data-i18n="nav.contacts">Контакты</a>
+      <a href="#booking" class="btn btn-primary btn-block" data-i18n="nav.bookBtn">Записаться</a>
+    </div>
+  </div>
+</header>
+
+<main id="main">
+
+  <!-- HERO -->
+  <section id="hero" class="section hero">
+    <div class="stars" id="stars-hero" aria-hidden="true"></div>
+    <div class="moon-deco" aria-hidden="true"></div>
+    <div class="container hero-inner">
+      <span class="hero-badge">✦ <span data-i18n="hero.badge">5 лет практики</span></span>
+      <h1 data-i18n="hero.title">Расклад Таро, который даёт ясность, а не пугает</h1>
+      <p class="lead" data-i18n="hero.subtitle">Онлайн-консультации для тех, кто хочет разобраться в себе, отношениях и решениях — бережно и честно, без запугивания и обещаний гарантированного результата.</p>
+      <div class="hero-actions">
+        <a href="#booking" class="btn btn-primary btn-lg" data-i18n="hero.ctaBook">Записаться на расклад</a>
+        <a href="https://instagram.com/di.froggy" target="_blank" rel="noopener" class="btn btn-secondary btn-lg" data-i18n="hero.ctaIg">Написать в Instagram</a>
+      </div>
+    </div>
+  </section>
+
+  <!-- ABOUT -->
+  <section id="about" class="section about">
+    <div class="container about-grid fade-up">
+      <h2 data-i18n="about.heading">Обо мне</h2>
+      <p class="muted" style="max-width:640px;font-size:17px;" data-i18n="about.text">Привет! Я таролог с 5-летним стажем. Работаю с картами Таро как с инструментом самопознания и поиска ответов — не предсказываю судьбу, а помогаю увидеть ситуацию яснее. Объясняю каждую карту понятно и бережно, без запугивания и лишней мистики. Моя задача — чтобы после консультации вы ушли с ясностью, а не с новыми тревогами.</p>
+      <div class="about-badges">
+        <span class="badge-pill">⏳ <span data-i18n="about.badge1">5 лет опыта</span></span>
+        <span class="badge-pill">💻 <span data-i18n="about.badge2">Онлайн-консультации</span></span>
+        <span class="badge-pill">🔒 <span data-i18n="about.badge3">Конфиденциально</span></span>
+      </div>
+    </div>
+  </section>
+
+  <!-- AUDIENCE -->
+  <section id="audience" class="section audience">
+    <div class="container fade-up">
+      <h2 class="center" data-i18n="audience.heading">Для кого эти услуги</h2>
+      <div class="cards-grid" id="audience-cards"></div>
+    </div>
+  </section>
+
+  <!-- PRICING -->
+  <section id="pricing" class="section section-dark pricing">
+    <div class="stars" aria-hidden="true"></div>
+    <div class="container fade-up">
+      <h2 class="center" data-i18n="pricing.heading">Тарифы</h2>
+      <p class="pricing-sub muted" data-i18n="pricing.sub">Выберите формат — тариф автоматически подставится в форму записи.</p>
+      <div class="pricing-grid" id="pricing-cards"></div>
+    </div>
+  </section>
+
+  <!-- FAQ -->
+  <section id="faq" class="section faq">
+    <div class="container fade-up">
+      <h2 class="center" data-i18n="faq.heading">Частые вопросы тарологу</h2>
+      <div class="faq-tabs" id="faq-tabs" role="tablist"></div>
+      <div class="faq-list" id="faq-list"></div>
+      <p class="faq-hint" data-i18n="faq.hint">Не нашли свой вопрос? Напишите — подберём формулировку вместе.</p>
+    </div>
+  </section>
+
+  <!-- BOOKING -->
+  <section id="booking" class="section section-dark booking">
+    <div class="container fade-up">
+      <h2 class="center" data-i18n="booking.heading">Свободные окна</h2>
+      <p class="center muted" data-i18n="booking.subheading">Выберите дату и время — слоты обновляются каждую неделю.</p>
+
+      <h3 style="margin-top:var(--sp-4);font-size:16px;" data-i18n="booking.dateLabel">Дата</h3>
+      <div class="date-strip" id="date-strip" role="listbox" aria-label="Выбор даты"></div>
+
+      <h3 style="margin-top:var(--sp-3);font-size:16px;" data-i18n="booking.slotsLabel">Время</h3>
+      <div class="slots-grid" id="slots-grid" role="listbox" aria-label="Выбор времени"></div>
+
+      <div class="selected-summary" id="selected-summary"></div>
+
+      <form class="booking-form" id="booking-form" novalidate>
+        <div class="field">
+          <label for="f-name" data-i18n="booking.form.nameLabel">Имя</label>
+          <input type="text" id="f-name" name="name" data-i18n-placeholder="booking.form.namePlaceholder" autocomplete="name">
+          <div class="field-error" id="err-name"></div>
+        </div>
+        <div class="field">
+          <label for="f-contact" data-i18n="booking.form.contactLabel">Instagram или Telegram ник</label>
+          <input type="text" id="f-contact" name="contact" data-i18n-placeholder="booking.form.contactPlaceholder">
+          <div class="field-error" id="err-contact"></div>
+        </div>
+        <div class="field">
+          <label for="f-tariff" data-i18n="booking.form.tariffLabel">Тариф</label>
+          <select id="f-tariff" name="tariff"></select>
+          <div class="field-error" id="err-tariff"></div>
+        </div>
+        <div class="field">
+          <label for="f-category" data-i18n="booking.form.categoryLabel">Категория вопроса</label>
+          <select id="f-category" name="category"></select>
+          <div class="field-error" id="err-category"></div>
+        </div>
+        <div class="field">
+          <label for="f-question" data-i18n="booking.form.questionLabel">Ваш вопрос</label>
+          <textarea id="f-question" name="question" data-i18n-placeholder="booking.form.questionPlaceholder"></textarea>
+          <div class="field-error" id="err-question"></div>
+        </div>
+        <div class="checkbox-field">
+          <input type="checkbox" id="f-consent" name="consent">
+          <label for="f-consent" data-i18n="booking.form.consentLabel">Я согласен(на) на обработку персональных данных</label>
+        </div>
+        <div class="field-error" id="err-consent"></div>
+        <div class="field-error" id="err-slot"></div>
+        <button type="submit" class="btn btn-primary btn-lg" id="submit-btn" data-i18n="booking.form.submitBtn">Записаться</button>
+      </form>
+
+      <div class="confirmation-screen hidden" id="confirmation-screen" role="status">
+        <div class="icon-big">✨</div>
+        <h3 data-i18n="booking.confirm.title">Заявка почти готова</h3>
+        <p data-i18n="booking.confirm.text">Отправьте её мне в Direct — текст заявки уже скопирован в буфер обмена, а Instagram открыт в новой вкладке.</p>
+        <p class="copy-note" id="copy-note" data-i18n="booking.confirm.copied">Текст заявки скопирован ✓</p>
+        <a href="https://instagram.com/di.froggy" target="_blank" rel="noopener" class="btn btn-primary btn-lg" data-i18n="booking.confirm.openIg">Открыть Instagram</a>
+        <div>
+          <button type="button" class="btn btn-outline" id="confirm-back-btn" style="margin-top:14px;" data-i18n="booking.confirm.backBtn">Назад к форме</button>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- PROCESS -->
+  <section id="process" class="section process">
+    <div class="container fade-up">
+      <h2 class="center" data-i18n="process.heading">Как проходит консультация</h2>
+      <div class="process-grid" id="process-steps"></div>
+    </div>
+  </section>
+
+  <!-- REVIEWS -->
+  <section id="reviews" class="section section-dark reviews">
+    <div class="container fade-up">
+      <h2 class="center" data-i18n="reviews.heading">Отзывы</h2>
+      <p class="reviews-note" data-i18n="reviews.note">Это карточки-заготовки — замените на настоящие отзывы клиентов.</p>
+      <div class="reviews-grid" id="reviews-grid"></div>
+    </div>
+  </section>
+
+  <!-- DISCLAIMER -->
+  <section id="disclaimer" class="section disclaimer">
+    <div class="container">
+      <p data-i18n="disclaimer.text">Расклады носят развлекательно-рекомендательный характер и не заменяют консультацию врача, юриста, психолога или финансового специалиста. Услуги предназначены для лиц старше 18 лет.</p>
+    </div>
+  </section>
+
+  <!-- CONTACTS -->
+  <section id="contacts" class="section section-dark contacts">
+    <div class="stars" aria-hidden="true"></div>
+    <div class="container fade-up">
+      <h2 data-i18n="contacts.heading">Готовы узнать больше?</h2>
+      <p class="muted" data-i18n="contacts.sub">Напишите мне в Instagram — отвечаю лично каждому.</p>
+      <a href="https://instagram.com/di.froggy" target="_blank" rel="noopener" class="btn btn-primary btn-lg" data-i18n="contacts.ctaBtn">Написать в Instagram @di.froggy</a>
+    </div>
+  </section>
+
+</main>
+
+<footer class="site-footer">
+  <div class="container">
+    <div><strong>di.froggy</strong> · <a href="https://instagram.com/di.froggy" target="_blank" rel="noopener">@di.froggy</a> · <span id="foot-year">2026</span></div>
+    <p class="foot-disclaimer" data-i18n="footer.disclaimer">Расклады Таро носят развлекательно-рекомендательный характер и не заменяют профессиональную помощь. Услуги предназначены для лиц старше 18 лет.</p>
+  </div>
+</footer>
+
+<div class="mobile-sticky-bar">
+  <a href="#booking" class="btn btn-primary btn-block" data-i18n="nav.bookBtn">Записаться</a>
+</div>
+<a href="https://instagram.com/di.froggy" target="_blank" rel="noopener" class="floating-ig-btn" aria-label="Instagram" data-i18n-aria="nav.igAria">
+  <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><rect x="2" y="2" width="20" height="20" rx="6" stroke="#fff" stroke-width="1.8"/><circle cx="12" cy="12" r="4.2" stroke="#fff" stroke-width="1.8"/><circle cx="17.3" cy="6.7" r="1.2" fill="#fff"/></svg>
+</a>
+
+<script>
+"use strict";
+
+/* ================= 1. SCHEDULE_CONFIG — расписание (редактируй здесь) ================= */
+const SCHEDULE_CONFIG = {
+  startHour: 11,
+  endHour: 21,
+  daysAhead: 10,
+  // занятые часы по смещению дня от сегодняшнего (0 = сегодня, 1 = завтра, ...)
+  bookedByDayOffset: {
+    0: [11, 12, 16],
+    1: [13, 14, 19, 20],
+    2: [11, 17, 21],
+    3: [15, 16, 18],
+    4: [12, 13, 20],
+    5: [19, 20, 21],
+    6: [11, 14, 15],
+    7: [16, 17, 21],
+    8: [12, 18, 19],
+    9: [13, 20]
+  }
+};
+
+/* ================= 2. PRICING_CONFIG — цены (редактируй здесь) ================= */
+const PRICING_CONFIG = [
+  { id: "q1", priceUSD: 7 },
+  { id: "q3", priceUSD: 10, badge: "popular" },
+  { id: "q5", priceUSD: 15, badge: "best", perQuestionUSD: 3 }
+];
+
+/* ================= 3. INSTAGRAM_URL — ссылка (редактируй здесь) ================= */
+const INSTAGRAM_URL = "https://instagram.com/di.froggy";
+
+/* ================= 4-5. I18N — словарь переводов и отзывы (редактируй здесь) ================= */
+const I18N = {
+  ru: {
+    docTitle: "di.froggy — Таро-консультации онлайн",
+    metaDescription: "Онлайн-консультации с тарологом. 5 лет практики, бережно и честно, без запугивания.",
+    locale: "ru-RU",
+    a11y: { skip: "Перейти к основному содержимому" },
+    nav: {
+      about: "Обо мне", services: "Услуги", faq: "Вопросы", booking: "Запись", contacts: "Контакты",
+      bookBtn: "Записаться", langAria: "Переключить язык на английский", igAria: "Написать в Instagram"
+    },
+    hero: {
+      badge: "5 лет практики",
+      title: "Расклад Таро, который даёт ясность, а не пугает",
+      subtitle: "Онлайн-консультации для тех, кто хочет разобраться в себе, отношениях и решениях — бережно и честно, без запугивания и обещаний гарантированного результата.",
+      ctaBook: "Записаться на расклад", ctaIg: "Написать в Instagram"
+    },
+    about: {
+      heading: "Обо мне",
+      text: "Привет! Я таролог с 5-летним стажем. Работаю с картами Таро как с инструментом самопознания и поиска ответов — не предсказываю судьбу, а помогаю увидеть ситуацию яснее. Объясняю каждую карту понятно и бережно, без запугивания и лишней мистики. Моя задача — чтобы после консультации вы ушли с ясностью, а не с новыми тревогами.",
+      badge1: "5 лет опыта", badge2: "Онлайн-консультации", badge3: "Конфиденциально"
+    },
+    audience: {
+      heading: "Для кого эти услуги",
+      cards: [
+        { icon: "🤔", text: "Вы в сомнениях и стоите перед выбором" },
+        { icon: "💞", text: "Хотите разобраться в отношениях" },
+        { icon: "📈", text: "Ищете ясность в работе и финансах" },
+        { icon: "🌱", text: "Хотите лучше понять себя" },
+        { icon: "🫂", text: "Нужен взгляд со стороны и поддержка" },
+        { icon: "🔮", text: "Интересуетесь Таро" }
+      ]
+    },
+    pricing: {
+      heading: "Тарифы",
+      sub: "Выберите формат — тариф автоматически подставится в форму записи.",
+      selectBtn: "Выбрать",
+      perQuestion: "$3 за вопрос",
+      badgeLabels: { popular: "Популярный", best: "Лучшая цена" },
+      items: {
+        q1: { title: "1 вопрос", features: ["Ответ текстом или голосовым", "Расклад под ваш вопрос", "Краткая трактовка"] },
+        q3: { title: "3 вопроса", features: ["Ответ текстом или голосовым", "Расклад под каждый вопрос", "Краткая трактовка по каждому"] },
+        q5: { title: "5 вопросов", features: ["Ответ текстом или голосовым", "Расклад под каждый вопрос", "Подробная трактовка по каждому"] }
+      }
+    },
+    faq: {
+      heading: "Частые вопросы тарологу",
+      hint: "Не нашли свой вопрос? Напишите — подберём формулировку вместе.",
+      tariffBadge: "Тариф",
+      categories: [
+        { id: "love", icon: "❤️", title: "Любовь и отношения", questions: [
+          { q: "Думает ли он/она обо мне?", a: "Смотрю на расклад, который показывает текущие мысли и чувства человека к вам — без искажений и желаемого вместо действительного.", t: "1" },
+          { q: "Вернётся ли бывший?", a: "Разбираю энергетику ситуации и вероятные сценарии развития, честно — включая вариант «нет».", t: "1" },
+          { q: "Есть ли будущее у отношений?", a: "Смотрю на динамику пары: что держит вместе, что мешает, куда движется ситуация.", t: "3" },
+          { q: "Когда встречу партнёра?", a: "Таро не называет точных дат, но показывает периоды и условия, благоприятные для новых отношений.", t: "3" },
+          { q: "Что мешает мне в отношениях?", a: "Ищем внутренние и внешние паттерны, которые повторяются в ваших отношениях, и как с ними работать.", t: "5" }
+        ]},
+        { id: "career", icon: "💼", title: "Работа и карьера", questions: [
+          { q: "Стоит ли менять работу?", a: "Смотрю на плюсы и риски текущего и потенциального пути, чтобы решение было осознанным.", t: "1" },
+          { q: "Получу ли это место?", a: "Расклад показывает вероятный исход процесса и на что обратить внимание на собеседовании.", t: "1" },
+          { q: "Какое направление выбрать?", a: "Сравниваем варианты через расклад: где больше ресурса, интереса и перспектив именно для вас.", t: "3" },
+          { q: "Что ждёт меня в карьере?", a: "Общий обзор тенденций на ближайший период — рост, стагнация, смена курса.", t: "3" }
+        ]},
+        { id: "money", icon: "💰", title: "Деньги и финансы", questions: [
+          { q: "Когда улучшится финансовое положение?", a: "Смотрю периоды, благоприятные для роста доходов, и что может этому поспособствовать.", t: "1" },
+          { q: "Стоит ли начинать проект?", a: "Расклад показывает ресурсность идеи, риски и вероятную динамику на старте.", t: "3" },
+          { q: "Что блокирует денежный поток?", a: "Разбираем внутренние убеждения и внешние обстоятельства, которые тормозят финансы.", t: "5" }
+        ]},
+        { id: "personality", icon: "🌿", title: "Личность и саморазвитие", questions: [
+          { q: "В чём моё предназначение?", a: "Таро — не истина в последней инстанции, но помогает увидеть, где вам наиболее комфортно и сильно.", t: "5" },
+          { q: "Какие мои сильные стороны?", a: "Расклад подсвечивает качества и ресурсы, на которые стоит опираться сейчас.", t: "1" },
+          { q: "Что нужно отпустить?", a: "Смотрим, какие установки или ситуации тормозят ваше развитие.", t: "3" },
+          { q: "Какой урок даёт ситуация?", a: "Помогаю увидеть смысл и возможный рост в сложном периоде.", t: "1" }
+        ]},
+        { id: "future", icon: "🔮", title: "Будущее и решения", questions: [
+          { q: "Что ждёт меня в ближайшие 3 месяца?", a: "Общий обзор тенденций по ключевым сферам жизни на выбранный период.", t: "5" },
+          { q: "Как поступить в сложной ситуации?", a: "Сравниваем возможные варианты действий и их вероятные последствия.", t: "3" },
+          { q: "Стоит ли переезжать?", a: "Смотрю, что ждёт в случае переезда и в случае, если остаться.", t: "3" },
+          { q: "Какой выбор лучше?", a: "Раскладываю оба (или несколько) варианта рядом для честного сравнения.", t: "1" }
+        ]},
+        { id: "family", icon: "👨‍👩‍👧", title: "Семья и окружение", questions: [
+          { q: "Как улучшить отношения с родными?", a: "Смотрю на динамику в семье и возможные шаги для сближения.", t: "3" },
+          { q: "Что происходит с другом/коллегой?", a: "Расклад на отношения с конкретным человеком — его настрой и мотивы.", t: "1" }
+        ]}
+      ]
+    },
+    booking: {
+      heading: "Свободные окна",
+      subheading: "Выберите дату и время — слоты обновляются каждую неделю.",
+      dateLabel: "Дата", slotsLabel: "Время",
+      slotBooked: "занято",
+      summaryEmpty: "Выберите дату и время для записи.",
+      summaryDate: "Дата", summaryTime: "Время", summaryTariff: "Тариф",
+      form: {
+        nameLabel: "Имя", namePlaceholder: "Как вас зовут?",
+        contactLabel: "Instagram или Telegram ник", contactPlaceholder: "@ваш_ник",
+        tariffLabel: "Тариф", categoryLabel: "Категория вопроса",
+        categoryPlaceholder: "Выберите категорию",
+        questionLabel: "Ваш вопрос", questionPlaceholder: "Опишите, что хотите узнать…",
+        consentLabel: "Я согласен(на) на обработку персональных данных",
+        submitBtn: "Записаться"
+      },
+      errors: {
+        name: "Пожалуйста, укажите имя",
+        contact: "Укажите ник в Instagram или Telegram",
+        tariff: "Выберите тариф",
+        category: "Выберите категорию вопроса",
+        question: "Опишите ваш вопрос (минимум 5 символов)",
+        consent: "Нужно согласие на обработку данных",
+        slot: "Выберите дату и время"
+      },
+      confirm: {
+        title: "Заявка почти готова",
+        text: "Отправьте её мне в Direct — текст заявки уже скопирован в буфер обмена, а Instagram открыт в новой вкладке.",
+        copied: "Текст заявки скопирован ✓",
+        copyFailed: "Не удалось скопировать автоматически — текст заявки показан ниже, скопируйте вручную.",
+        openIg: "Открыть Instagram", backBtn: "Назад к форме"
+      },
+      requestTemplate: (d) => `Здравствуйте! Хочу записаться на расклад ✨\n\nИмя: ${d.name}\nКонтакт: ${d.contact}\nТариф: ${d.tariff}\nКатегория: ${d.category}\nДата: ${d.date}\nВремя: ${d.time}\n\nВопрос: ${d.question}`
+    },
+    process: {
+      heading: "Как проходит консультация",
+      steps: [
+        { icon: "🗂️", title: "Выбираете тариф и время", text: "Находите удобный тариф и свободное окно в расписании." },
+        { icon: "✍️", title: "Присылаете вопрос", text: "Формулируете вопрос в Direct — помогу, если нужно уточнить формулировку." },
+        { icon: "🃏", title: "Я делаю расклад", text: "Собираю расклад специально под ваш запрос." },
+        { icon: "💬", title: "Получаете трактовку", text: "Присылаю подробный ответ текстом или голосовым." }
+      ]
+    },
+    reviews: {
+      heading: "Отзывы",
+      note: "Это карточки-заготовки — замените на настоящие отзывы клиентов.",
+      items: [
+        { name: "Имя клиента", text: "Расклад помог увидеть ситуацию с другой стороны и принять решение спокойно, без паники." },
+        { name: "Имя клиента", text: "Объясняет бережно и понятно, никакого запугивания. После консультации стало легче." },
+        { name: "Имя клиента", text: "Очень тёплое и внимательное отношение. Отвечает по делу, честно, без лишних обещаний." }
+      ],
+      placeholderTag: "Пример отзыва — заменить на настоящий"
+    },
+    disclaimer: { text: "Расклады носят развлекательно-рекомендательный характер и не заменяют консультацию врача, юриста, психолога или финансового специалиста. Услуги предназначены для лиц старше 18 лет." },
+    contacts: { heading: "Готовы узнать больше?", sub: "Напишите мне в Instagram — отвечаю лично каждому.", ctaBtn: "Написать в Instagram @di.froggy" },
+    footer: { disclaimer: "Расклады Таро носят развлекательно-рекомендательный характер и не заменяют профессиональную помощь. Услуги предназначены для лиц старше 18 лет." }
+  },
+
+  en: {
+    docTitle: "di.froggy — Online Tarot Readings",
+    metaDescription: "Online tarot consultations. 5 years of practice, warm and honest — no fear-mongering.",
+    locale: "en-US",
+    a11y: { skip: "Skip to main content" },
+    nav: {
+      about: "About", services: "Services", faq: "FAQ", booking: "Booking", contacts: "Contact",
+      bookBtn: "Book a session", langAria: "Switch language to Russian", igAria: "Message on Instagram"
+    },
+    hero: {
+      badge: "5 years of practice",
+      title: "Tarot readings that bring clarity, not fear",
+      subtitle: "Online consultations for anyone who wants clarity about themselves, their relationships, or a decision — delivered warmly and honestly, with no scare tactics or promises of a guaranteed outcome.",
+      ctaBook: "Book a reading", ctaIg: "Message on Instagram"
+    },
+    about: {
+      heading: "About me",
+      text: "Hi! I'm a tarot reader with 5 years of experience. I use the cards as a tool for self-discovery and finding answers — not to predict fate, but to help you see your situation more clearly. I explain every card in a way that's easy to follow and never frightening. My goal is simple: you leave each session with clarity, not new worries.",
+      badge1: "5 years of experience", badge2: "Online consultations", badge3: "Fully confidential"
+    },
+    audience: {
+      heading: "Who this is for",
+      cards: [
+        { icon: "🤔", text: "You're torn between two choices" },
+        { icon: "💞", text: "You want clarity about a relationship" },
+        { icon: "📈", text: "You're looking for direction in work or money" },
+        { icon: "🌱", text: "You want to understand yourself better" },
+        { icon: "🫂", text: "You need an outside perspective and support" },
+        { icon: "🔮", text: "You're simply curious about tarot" }
+      ]
+    },
+    pricing: {
+      heading: "Pricing",
+      sub: "Pick a format — it'll be added to your booking form automatically.",
+      selectBtn: "Choose",
+      perQuestion: "$3 per question",
+      badgeLabels: { popular: "Most popular", best: "Best value" },
+      items: {
+        q1: { title: "1 question", features: ["Text or voice-note answer", "A reading tailored to your question", "A concise interpretation"] },
+        q3: { title: "3 questions", features: ["Text or voice-note answer", "A reading for each question", "A concise interpretation for each"] },
+        q5: { title: "5 questions", features: ["Text or voice-note answer", "A reading for each question", "A detailed interpretation for each"] }
+      }
+    },
+    faq: {
+      heading: "Questions people ask a tarot reader",
+      hint: "Don't see your question? Message me — we'll find the right wording together.",
+      tariffBadge: "Best fit",
+      categories: [
+        { id: "love", icon: "❤️", title: "Love & relationships", questions: [
+          { q: "Are they thinking about me?", a: "I read the cards for their current feelings and thoughts toward you — no wishful thinking, just what's there.", t: "1" },
+          { q: "Will my ex come back?", a: "I look at the energy between you and the likely paths ahead, honestly — including the possibility of 'no'.", t: "1" },
+          { q: "Does this relationship have a future?", a: "I look at the couple's dynamic: what's holding you together, what's in the way, and where things are heading.", t: "3" },
+          { q: "When will I meet a partner?", a: "Tarot can't give exact dates, but it can show favorable periods and conditions for new relationships.", t: "3" },
+          { q: "What's holding me back in relationships?", a: "We look for the recurring patterns in your relationships, inner and outer, and how to work with them.", t: "5" }
+        ]},
+        { id: "career", icon: "💼", title: "Work & career", questions: [
+          { q: "Should I change jobs?", a: "I weigh the upsides and risks of your current and potential path so you can decide with clear eyes.", t: "1" },
+          { q: "Will I get this job?", a: "The reading shows the likely outcome of the process and what to focus on in the interview.", t: "1" },
+          { q: "Which direction should I choose?", a: "We compare your options through the cards: where there's more energy, interest, and potential for you specifically.", t: "3" },
+          { q: "What's ahead for my career?", a: "A general outlook on the coming period — growth, a plateau, or a change of course.", t: "3" }
+        ]},
+        { id: "money", icon: "💰", title: "Money & finances", questions: [
+          { q: "When will my finances improve?", a: "I look at favorable periods for income growth and what could help bring that about.", t: "1" },
+          { q: "Should I start this project?", a: "The reading shows the idea's potential, the risks, and the likely dynamics at launch.", t: "3" },
+          { q: "What's blocking my money flow?", a: "We look at the inner beliefs and outer circumstances that may be slowing your finances down.", t: "5" }
+        ]},
+        { id: "personality", icon: "🌿", title: "Self & personal growth", questions: [
+          { q: "What is my purpose?", a: "Tarot isn't the final word, but it can help you see where you feel most at ease and strong.", t: "5" },
+          { q: "What are my strengths?", a: "The reading highlights the qualities and resources worth leaning on right now.", t: "1" },
+          { q: "What do I need to let go of?", a: "We look at which beliefs or situations may be holding your growth back.", t: "3" },
+          { q: "What lesson is this situation teaching me?", a: "I help you find the meaning and potential growth in a difficult period.", t: "1" }
+        ]},
+        { id: "future", icon: "🔮", title: "The future & decisions", questions: [
+          { q: "What's ahead for me in the next 3 months?", a: "A general outlook across key areas of life for the period you choose.", t: "5" },
+          { q: "How should I handle a difficult situation?", a: "We compare possible courses of action and their likely consequences.", t: "3" },
+          { q: "Should I relocate?", a: "I look at what's likely if you move, and what's likely if you stay.", t: "3" },
+          { q: "Which choice is better?", a: "I lay out both (or several) options side by side for an honest comparison.", t: "1" }
+        ]},
+        { id: "family", icon: "👨‍👩‍👧", title: "Family & people around you", questions: [
+          { q: "How can I improve things with my family?", a: "I look at the family dynamic and possible steps toward growing closer.", t: "3" },
+          { q: "What's going on with a friend or coworker?", a: "A reading on your relationship with a specific person — their mindset and motives.", t: "1" }
+        ]}
+      ]
+    },
+    booking: {
+      heading: "Open slots",
+      subheading: "Pick a date and time — the schedule refreshes every week.",
+      dateLabel: "Date", slotsLabel: "Time",
+      slotBooked: "booked",
+      summaryEmpty: "Pick a date and time to book.",
+      summaryDate: "Date", summaryTime: "Time", summaryTariff: "Package",
+      form: {
+        nameLabel: "Name", namePlaceholder: "What's your name?",
+        contactLabel: "Instagram or Telegram handle", contactPlaceholder: "@your_handle",
+        tariffLabel: "Package", categoryLabel: "Question category",
+        categoryPlaceholder: "Choose a category",
+        questionLabel: "Your question", questionPlaceholder: "Tell me what you'd like to know…",
+        consentLabel: "I agree to the processing of my personal data",
+        submitBtn: "Book now"
+      },
+      errors: {
+        name: "Please enter your name",
+        contact: "Please add your Instagram or Telegram handle",
+        tariff: "Please choose a package",
+        category: "Please choose a question category",
+        question: "Please describe your question (at least 5 characters)",
+        consent: "Please agree to data processing to continue",
+        slot: "Please pick a date and time"
+      },
+      confirm: {
+        title: "Your request is almost ready",
+        text: "Send it to me on Direct — the request text is already copied to your clipboard, and Instagram opened in a new tab.",
+        copied: "Request text copied ✓",
+        copyFailed: "Couldn't copy automatically — the request text is shown below, please copy it manually.",
+        openIg: "Open Instagram", backBtn: "Back to form"
+      },
+      requestTemplate: (d) => `Hi! I'd like to book a reading ✨\n\nName: ${d.name}\nContact: ${d.contact}\nPackage: ${d.tariff}\nCategory: ${d.category}\nDate: ${d.date}\nTime: ${d.time}\n\nQuestion: ${d.question}`
+    },
+    process: {
+      heading: "How a session works",
+      steps: [
+        { icon: "🗂️", title: "Pick a package and time", text: "Choose the package that fits and an open slot in the schedule." },
+        { icon: "✍️", title: "Send your question", text: "Share your question on Direct — happy to help refine the wording." },
+        { icon: "🃏", title: "I do the reading", text: "I put together a reading tailored specifically to your question." },
+        { icon: "💬", title: "Get your interpretation", text: "I send a detailed answer as text or a voice note." }
+      ]
+    },
+    reviews: {
+      heading: "Reviews",
+      note: "These are placeholder cards — swap them for real client reviews.",
+      items: [
+        { name: "Client name", text: "The reading helped me see my situation from a new angle and make a calm decision, without panic." },
+        { name: "Client name", text: "Explains everything gently and clearly, no scare tactics. I felt lighter after the session." },
+        { name: "Client name", text: "Warm and attentive. Honest, to-the-point answers, with no overblown promises." }
+      ],
+      placeholderTag: "Sample review — replace with a real one"
+    },
+    disclaimer: { text: "Readings are for entertainment and guidance purposes only and do not replace professional medical, legal, psychological, or financial advice. Services are intended for adults 18+." },
+    contacts: { heading: "Ready to find out more?", sub: "Message me on Instagram — I reply to everyone personally.", ctaBtn: "Message @di.froggy on Instagram" },
+    footer: { disclaimer: "Tarot readings are for entertainment and guidance purposes only and do not replace professional help. Services are intended for adults 18+." }
+  }
+};
+
+/* ================= STATE ================= */
+let currentLang = "ru";
+let selectedDayOffset = null;
+let selectedHour = null;
+let selectedPricingId = null;
+
+/* ================= HELPERS ================= */
+function t(lang){ return I18N[lang]; }
+
+function detectInitialLang(){
+  try{
+    const saved = localStorage.getItem("df_lang");
+    if (saved === "ru" || saved === "en") return saved;
+  }catch(e){ /* storage blocked — ignore */ }
+  const nav = (navigator.language || "ru").toLowerCase();
+  return nav.startsWith("en") ? "en" : "ru";
+}
+
+function saveLang(lang){
+  try{ localStorage.setItem("df_lang", lang); }catch(e){ /* storage blocked — ignore */ }
+}
+
+function formatDate(date, lang){
+  return new Intl.DateTimeFormat(lang === "en" ? "en-US" : "ru-RU", { weekday: "short", day: "numeric", month: "short" }).format(date);
+}
+function formatDateLong(date, lang){
+  return new Intl.DateTimeFormat(lang === "en" ? "en-US" : "ru-RU", { weekday: "long", day: "numeric", month: "long" }).format(date);
+}
+
+const SVG_FLAG_RU = '<svg viewBox="0 0 60 40" xmlns="http://www.w3.org/2000/svg"><rect width="60" height="40" fill="#fff"/><rect y="13.33" width="60" height="13.34" fill="#0039a6"/><rect y="26.67" width="60" height="13.33" fill="#d52b1e"/></svg>';
+const SVG_FLAG_EN = '<svg viewBox="0 0 60 36" xmlns="http://www.w3.org/2000/svg"><rect width="60" height="36" fill="#00247d"/><g stroke="#fff" stroke-width="7"><line x1="0" y1="0" x2="60" y2="36"/><line x1="60" y1="0" x2="0" y2="36"/></g><g stroke="#cf142b" stroke-width="2.4"><line x1="0" y1="0" x2="60" y2="36"/><line x1="60" y1="0" x2="0" y2="36"/></g><g stroke="#fff" stroke-width="12"><line x1="30" y1="0" x2="30" y2="36"/><line x1="0" y1="18" x2="60" y2="18"/></g><g stroke="#cf142b" stroke-width="7"><line x1="30" y1="0" x2="30" y2="36"/><line x1="0" y1="18" x2="60" y2="18"/></g></svg>';
+
+/* ================= RENDER: STATIC I18N TEXT ================= */
+function applyStaticTexts(lang){
+  const dict = t(lang);
+  document.documentElement.lang = lang;
+  document.title = dict.docTitle;
+  document.getElementById("meta-description").setAttribute("content", dict.metaDescription);
+  document.getElementById("og-title").setAttribute("content", dict.docTitle);
+  document.getElementById("og-description").setAttribute("content", dict.metaDescription);
+
+  document.querySelectorAll("[data-i18n]").forEach(function(el){
+    const key = el.getAttribute("data-i18n");
+    const val = resolveKey(dict, key);
+    if (typeof val === "string") el.textContent = val;
+  });
+  document.querySelectorAll("[data-i18n-placeholder]").forEach(function(el){
+    const key = el.getAttribute("data-i18n-placeholder");
+    const val = resolveKey(dict, key);
+    if (typeof val === "string") el.setAttribute("placeholder", val);
+  });
+  document.querySelectorAll("[data-i18n-aria]").forEach(function(el){
+    const key = el.getAttribute("data-i18n-aria");
+    const val = resolveKey(dict, key);
+    if (typeof val === "string") el.setAttribute("aria-label", val);
+  });
+
+  const flagEl = document.getElementById("lang-flag");
+  flagEl.innerHTML = lang === "ru" ? SVG_FLAG_RU : SVG_FLAG_EN;
+  document.getElementById("lang-code").textContent = lang === "ru" ? "RU" : "EN";
+  document.getElementById("burger-btn").setAttribute("aria-label", lang === "ru" ? "Открыть меню" : "Open menu");
+}
+
+function resolveKey(obj, path){
+  return path.split(".").reduce(function(acc, k){ return (acc && typeof acc === "object") ? acc[k] : undefined; }, obj);
+}
+
+/* ================= RENDER: AUDIENCE ================= */
+function renderAudience(lang){
+  const dict = t(lang);
+  const container = document.getElementById("audience-cards");
+  container.innerHTML = "";
+  dict.audience.cards.forEach(function(card){
+    const el = document.createElement("div");
+    el.className = "aud-card";
+    el.innerHTML = '<span class="icon" aria-hidden="true">' + card.icon + '</span><p>' + escapeHtml(card.text) + '</p>';
+    container.appendChild(el);
+  });
+}
+
+/* ================= RENDER: PRICING ================= */
+function renderPricing(lang){
+  const dict = t(lang);
+  const container = document.getElementById("pricing-cards");
+  container.innerHTML = "";
+  PRICING_CONFIG.forEach(function(cfg){
+    const item = dict.pricing.items[cfg.id];
+    const card = document.createElement("div");
+    card.className = "price-card" + (cfg.badge ? " " + cfg.badge : "");
+    let badgeHtml = "";
+    if (cfg.badge) badgeHtml = '<span class="price-badge">' + escapeHtml(dict.pricing.badgeLabels[cfg.badge]) + '</span>';
+    let perQHtml = cfg.perQuestionUSD ? '<div class="price-per">' + escapeHtml(dict.pricing.perQuestion) + '</div>' : '';
+    const featuresHtml = item.features.map(function(f){ return "<li>" + escapeHtml(f) + "</li>"; }).join("");
+    card.innerHTML =
+      badgeHtml +
+      "<h3>" + escapeHtml(item.title) + "</h3>" +
+      '<div class="price-amount">$' + cfg.priceUSD + "</div>" +
+      perQHtml +
+      '<ul class="price-features">' + featuresHtml + "</ul>" +
+      '<button type="button" class="btn btn-primary btn-block price-select-btn" data-pricing-id="' + cfg.id + '">' + escapeHtml(dict.pricing.selectBtn) + "</button>";
+    container.appendChild(card);
+  });
+  container.querySelectorAll(".price-select-btn").forEach(function(btn){
+    btn.addEventListener("click", function(){
+      selectedPricingId = btn.getAttribute("data-pricing-id");
+      syncTariffSelect();
+      updateSelectedSummary();
+      document.getElementById("booking").scrollIntoView({ behavior: "smooth" });
+    });
+  });
+}
+
+/* ================= RENDER: FAQ ================= */
+let activeFaqCategory = null;
+function renderFaq(lang){
+  const dict = t(lang);
+  const tabsEl = document.getElementById("faq-tabs");
+  const listEl = document.getElementById("faq-list");
+  tabsEl.innerHTML = "";
+  listEl.innerHTML = "";
+
+  if (!activeFaqCategory || !dict.faq.categories.find(function(c){ return c.id === activeFaqCategory; })){
+    activeFaqCategory = dict.faq.categories[0].id;
+  }
+
+  dict.faq.categories.forEach(function(cat){
+    const tab = document.createElement("button");
+    tab.type = "button";
+    tab.className = "faq-tab";
+    tab.setAttribute("role", "tab");
+    tab.setAttribute("aria-selected", String(cat.id === activeFaqCategory));
+    tab.innerHTML = '<span aria-hidden="true">' + cat.icon + "</span><span>" + escapeHtml(cat.title) + "</span>";
+    tab.addEventListener("click", function(){
+      activeFaqCategory = cat.id;
+      renderFaq(currentLang);
+    });
+    tabsEl.appendChild(tab);
+  });
+
+  const activeCat = dict.faq.categories.find(function(c){ return c.id === activeFaqCategory; });
+  activeCat.questions.forEach(function(q, idx){
+    const item = document.createElement("div");
+    item.className = "faq-item";
+    item.setAttribute("data-open", "false");
+    const qId = "faq-" + activeCat.id + "-" + idx;
+    item.innerHTML =
+      '<button type="button" class="faq-q" aria-expanded="false" aria-controls="' + qId + '">' +
+        "<span>" + escapeHtml(q.q) + "</span>" +
+        '<span class="faq-tariff">' + escapeHtml(dict.faq.tariffBadge) + ": " + escapeHtml(q.t) + "</span>" +
+        '<svg class="chevron" width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M6 9l6 6 6-6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>' +
+      "</button>" +
+      '<div class="faq-a" id="' + qId + '"><div class="faq-a-inner">' + escapeHtml(q.a) + "</div></div>";
+    const btn = item.querySelector(".faq-q");
+    const answer = item.querySelector(".faq-a");
+    btn.addEventListener("click", function(){
+      const isOpen = item.getAttribute("data-open") === "true";
+      item.setAttribute("data-open", String(!isOpen));
+      btn.setAttribute("aria-expanded", String(!isOpen));
+      answer.style.maxHeight = isOpen ? "0px" : answer.scrollHeight + "px";
+    });
+    listEl.appendChild(item);
+  });
+}
+
+/* ================= RENDER: PROCESS ================= */
+function renderProcess(lang){
+  const dict = t(lang);
+  const container = document.getElementById("process-steps");
+  container.innerHTML = "";
+  dict.process.steps.forEach(function(step, idx){
+    const el = document.createElement("div");
+    el.className = "process-step";
+    el.innerHTML =
+      '<div class="num">' + (idx + 1) + "</div>" +
+      '<div class="icon" aria-hidden="true">' + step.icon + "</div>" +
+      "<h3>" + escapeHtml(step.title) + "</h3>" +
+      '<p class="muted">' + escapeHtml(step.text) + "</p>";
+    container.appendChild(el);
+  });
+}
+
+/* ================= RENDER: REVIEWS ================= */
+function renderReviews(lang){
+  const dict = t(lang);
+  const container = document.getElementById("reviews-grid");
+  container.innerHTML = "";
+  dict.reviews.items.forEach(function(rev){
+    const el = document.createElement("div");
+    el.className = "review-card";
+    el.innerHTML =
+      '<div class="stars-row" aria-hidden="true">★★★★★</div>' +
+      "<p>" + escapeHtml(rev.text) + "</p>" +
+      '<div class="name">' + escapeHtml(rev.name) + "</div>" +
+      '<span class="placeholder-tag">' + escapeHtml(dict.reviews.placeholderTag) + "</span>";
+    container.appendChild(el);
+  });
+}
+
+/* ================= RENDER: BOOKING ================= */
+function buildDateList(){
+  const list = [];
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  for (let i = 0; i < SCHEDULE_CONFIG.daysAhead; i++){
+    const d = new Date(today);
+    d.setDate(d.getDate() + i);
+    list.push({ offset: i, date: d });
+  }
+  return list;
+}
+const DATE_LIST = buildDateList();
+
+function renderDateStrip(lang){
+  const container = document.getElementById("date-strip");
+  container.innerHTML = "";
+  if (selectedDayOffset === null) selectedDayOffset = DATE_LIST[0].offset;
+  DATE_LIST.forEach(function(entry){
+    const btn = document.createElement("button");
+    btn.type = "button";
+    btn.className = "date-chip";
+    btn.setAttribute("role", "option");
+    btn.setAttribute("aria-selected", String(entry.offset === selectedDayOffset));
+    const dow = new Intl.DateTimeFormat(lang === "en" ? "en-US" : "ru-RU", { weekday: "short" }).format(entry.date);
+    const dnum = new Intl.DateTimeFormat(lang === "en" ? "en-US" : "ru-RU", { day: "numeric", month: "short" }).format(entry.date);
+    btn.innerHTML = '<span class="dow">' + escapeHtml(dow) + '</span><span class="dnum">' + escapeHtml(dnum) + "</span>";
+    btn.addEventListener("click", function(){
+      selectedDayOffset = entry.offset;
+      selectedHour = null;
+      renderDateStrip(currentLang);
+      renderSlots(currentLang);
+      updateSelectedSummary();
+    });
+    container.appendChild(btn);
+  });
+}
+
+function renderSlots(lang){
+  const dict = t(lang);
+  const container = document.getElementById("slots-grid");
+  container.innerHTML = "";
+  const booked = SCHEDULE_CONFIG.bookedByDayOffset[selectedDayOffset] || [];
+  for (let h = SCHEDULE_CONFIG.startHour; h <= SCHEDULE_CONFIG.endHour; h++){
+    const isBooked = booked.indexOf(h) !== -1;
+    const btn = document.createElement("button");
+    btn.type = "button";
+    btn.className = "slot-btn";
+    btn.setAttribute("role", "option");
+    btn.disabled = isBooked;
+    btn.setAttribute("aria-selected", String(h === selectedHour));
+    const label = String(h).padStart(2, "0") + ":00";
+    btn.textContent = isBooked ? label + " · " + dict.booking.slotBooked : label;
+    if (!isBooked){
+      btn.addEventListener("click", function(){
+        selectedHour = h;
+        renderSlots(currentLang);
+        updateSelectedSummary();
+      });
+    }
+    container.appendChild(btn);
+  }
+}
+
+function updateSelectedSummary(){
+  const dict = t(currentLang);
+  const el = document.getElementById("selected-summary");
+  if (selectedDayOffset === null || selectedHour === null){
+    el.textContent = dict.booking.summaryEmpty;
+    return;
+  }
+  const entry = DATE_LIST.find(function(d){ return d.offset === selectedDayOffset; });
+  const dateLabel = formatDateLong(entry.date, currentLang);
+  const timeLabel = String(selectedHour).padStart(2, "0") + ":00";
+  let tariffLabel = "—";
+  if (selectedPricingId){
+    const cfg = PRICING_CONFIG.find(function(c){ return c.id === selectedPricingId; });
+    tariffLabel = dict.pricing.items[selectedPricingId].title + " — $" + cfg.priceUSD;
+  }
+  el.textContent = dict.booking.summaryDate + ": " + dateLabel + " · " + dict.booking.summaryTime + ": " + timeLabel + " · " + dict.booking.summaryTariff + ": " + tariffLabel;
+}
+
+function syncTariffSelect(){
+  const select = document.getElementById("f-tariff");
+  if (selectedPricingId) select.value = selectedPricingId;
+}
+
+function populateFormSelects(lang){
+  const dict = t(lang);
+  const tariffSelect = document.getElementById("f-tariff");
+  const prevTariff = tariffSelect.value;
+  tariffSelect.innerHTML = "";
+  const placeholderOpt = document.createElement("option");
+  placeholderOpt.value = "";
+  placeholderOpt.textContent = dict.booking.form.tariffLabel + "…";
+  tariffSelect.appendChild(placeholderOpt);
+  PRICING_CONFIG.forEach(function(cfg){
+    const opt = document.createElement("option");
+    opt.value = cfg.id;
+    opt.textContent = dict.pricing.items[cfg.id].title + " — $" + cfg.priceUSD;
+    tariffSelect.appendChild(opt);
+  });
+  if (selectedPricingId) tariffSelect.value = selectedPricingId;
+  else if (prevTariff) tariffSelect.value = prevTariff;
+
+  const categorySelect = document.getElementById("f-category");
+  const prevCategory = categorySelect.value;
+  categorySelect.innerHTML = "";
+  const catPlaceholder = document.createElement("option");
+  catPlaceholder.value = "";
+  catPlaceholder.textContent = dict.booking.form.categoryPlaceholder;
+  categorySelect.appendChild(catPlaceholder);
+  dict.faq.categories.forEach(function(cat){
+    const opt = document.createElement("option");
+    opt.value = cat.id;
+    opt.textContent = cat.icon + " " + cat.title;
+    categorySelect.appendChild(opt);
+  });
+  if (prevCategory) categorySelect.value = prevCategory;
+}
+
+/* ================= FORM VALIDATION + SUBMIT ================= */
+function escapeHtml(str){
+  const div = document.createElement("div");
+  div.textContent = str;
+  return div.innerHTML;
+}
+
+function clearErrors(){
+  ["name", "contact", "tariff", "category", "question", "consent", "slot"].forEach(function(key){
+    const errEl = document.getElementById("err-" + key);
+    if (errEl) errEl.textContent = "";
+    const fieldWrap = errEl ? errEl.closest(".field") : null;
+    if (fieldWrap) fieldWrap.classList.remove("has-error");
+  });
+}
+
+function setError(key, message){
+  const errEl = document.getElementById("err-" + key);
+  if (!errEl) return;
+  errEl.textContent = message;
+  const fieldWrap = errEl.closest(".field");
+  if (fieldWrap) fieldWrap.classList.add("has-error");
+}
+
+function handleFormSubmit(ev){
+  ev.preventDefault();
+  const dict = t(currentLang);
+  clearErrors();
+
+  const name = document.getElementById("f-name").value.trim();
+  const contact = document.getElementById("f-contact").value.trim();
+  const tariff = document.getElementById("f-tariff").value;
+  const category = document.getElementById("f-category").value;
+  const question = document.getElementById("f-question").value.trim();
+  const consent = document.getElementById("f-consent").checked;
+
+  let valid = true;
+  if (!name){ setError("name", dict.booking.errors.name); valid = false; }
+  if (!contact){ setError("contact", dict.booking.errors.contact); valid = false; }
+  if (!tariff){ setError("tariff", dict.booking.errors.tariff); valid = false; }
+  if (!category){ setError("category", dict.booking.errors.category); valid = false; }
+  if (question.length < 5){ setError("question", dict.booking.errors.question); valid = false; }
+  if (!consent){ setError("consent", dict.booking.errors.consent); valid = false; }
+  if (selectedDayOffset === null || selectedHour === null){ setError("slot", dict.booking.errors.slot); valid = false; }
+
+  if (!valid) return;
+
+  selectedPricingId = tariff;
+
+  const submitBtn = document.getElementById("submit-btn");
+  submitBtn.classList.add("loading");
+  submitBtn.disabled = true;
+
+  // Opened synchronously (still inside the click's user-gesture context) so
+  // browser popup blockers don't swallow it — async work below must not precede this.
+  const igWindow = window.open("", "_blank", "noopener");
+  if (igWindow) igWindow.opener = null;
+
+  const entry = DATE_LIST.find(function(d){ return d.offset === selectedDayOffset; });
+  const dateLabel = formatDateLong(entry.date, currentLang);
+  const timeLabel = String(selectedHour).padStart(2, "0") + ":00";
+  const tariffLabel = dict.pricing.items[tariff].title + " — $" + PRICING_CONFIG.find(function(c){ return c.id === tariff; }).priceUSD;
+  const categoryLabel = dict.faq.categories.find(function(c){ return c.id === category; }).title;
+
+  const requestText = dict.booking.requestTemplate({
+    name: name, contact: contact, tariff: tariffLabel, category: categoryLabel,
+    date: dateLabel, time: timeLabel, question: question
+  });
+
+  setTimeout(function(){
+    copyToClipboard(requestText).then(function(success){
+      submitBtn.classList.remove("loading");
+      submitBtn.disabled = false;
+      showConfirmation(success, requestText);
+      if (igWindow) igWindow.location.href = INSTAGRAM_URL;
+      else window.open(INSTAGRAM_URL, "_blank", "noopener");
+    });
+  }, 400);
+}
+
+function copyToClipboard(text){
+  if (navigator.clipboard && navigator.clipboard.writeText){
+    return navigator.clipboard.writeText(text).then(function(){ return true; }).catch(function(){ return fallbackCopy(text); });
+  }
+  return Promise.resolve(fallbackCopy(text));
+}
+
+function fallbackCopy(text){
+  try{
+    const ta = document.createElement("textarea");
+    ta.value = text;
+    ta.style.position = "fixed";
+    ta.style.left = "-9999px";
+    document.body.appendChild(ta);
+    ta.select();
+    const ok = document.execCommand("copy");
+    document.body.removeChild(ta);
+    return ok;
+  }catch(e){ return false; }
+}
+
+function showConfirmation(copySuccess, requestText){
+  const dict = t(currentLang);
+  document.getElementById("booking-form").classList.add("hidden");
+  const confirmEl = document.getElementById("confirmation-screen");
+  confirmEl.classList.remove("hidden");
+  const copyNote = document.getElementById("copy-note");
+  copyNote.textContent = copySuccess ? dict.booking.confirm.copied : dict.booking.confirm.copyFailed + "\n\n" + requestText;
+  confirmEl.scrollIntoView({ behavior: "smooth", block: "center" });
+}
+
+function resetBookingUI(){
+  document.getElementById("confirmation-screen").classList.add("hidden");
+  document.getElementById("booking-form").classList.remove("hidden");
+}
+
+/* ================= LANGUAGE SWITCH ================= */
+function setLanguage(lang){
+  currentLang = lang;
+  saveLang(lang);
+  applyStaticTexts(lang);
+  renderAudience(lang);
+  renderPricing(lang);
+  renderFaq(lang);
+  renderProcess(lang);
+  renderReviews(lang);
+  renderDateStrip(lang);
+  renderSlots(lang);
+  populateFormSelects(lang);
+  updateSelectedSummary();
+}
+
+/* ================= STARS DECORATION ================= */
+function injectStars(){
+  document.querySelectorAll(".stars").forEach(function(container){
+    if (container.childElementCount > 0) return;
+    const count = 18;
+    for (let i = 0; i < count; i++){
+      const s = document.createElement("span");
+      const size = (Math.random() * 2.2 + 1).toFixed(1);
+      s.style.width = size + "px";
+      s.style.height = size + "px";
+      s.style.left = (Math.random() * 100) + "%";
+      s.style.top = (Math.random() * 100) + "%";
+      s.style.animationDelay = (Math.random() * 3) + "s";
+      container.appendChild(s);
+    }
+  });
+}
+
+/* ================= FADE-IN OBSERVER ================= */
+function setupFadeIn(){
+  const els = document.querySelectorAll(".fade-up");
+  if (!("IntersectionObserver" in window)){
+    els.forEach(function(el){ el.classList.add("visible"); });
+    return;
+  }
+  const observer = new IntersectionObserver(function(entries){
+    entries.forEach(function(entry){
+      if (entry.isIntersecting){
+        entry.target.classList.add("visible");
+        observer.unobserve(entry.target);
+      }
+    });
+  }, { threshold: 0.15 });
+  els.forEach(function(el){ observer.observe(el); });
+}
+
+/* ================= MOBILE MENU + HEADER ================= */
+function setupMobileMenu(){
+  const burger = document.getElementById("burger-btn");
+  const menu = document.getElementById("mobile-menu");
+  burger.addEventListener("click", function(){
+    const isOpen = menu.classList.contains("open");
+    menu.classList.toggle("open");
+    burger.setAttribute("aria-expanded", String(!isOpen));
+  });
+  menu.querySelectorAll("a").forEach(function(a){
+    a.addEventListener("click", function(){
+      menu.classList.remove("open");
+      burger.setAttribute("aria-expanded", "false");
+    });
+  });
+}
+
+/* ================= INIT ================= */
+document.addEventListener("DOMContentLoaded", function(){
+  document.getElementById("foot-year").textContent = new Date().getFullYear();
+
+  const initialLang = detectInitialLang();
+  setLanguage(initialLang);
+
+  document.getElementById("lang-toggle").addEventListener("click", function(){
+    setLanguage(currentLang === "ru" ? "en" : "ru");
+  });
+
+  document.getElementById("booking-form").addEventListener("submit", handleFormSubmit);
+  document.getElementById("confirm-back-btn").addEventListener("click", resetBookingUI);
+  document.getElementById("f-tariff").addEventListener("change", function(ev){
+    selectedPricingId = ev.target.value || null;
+    updateSelectedSummary();
+  });
+
+  setupMobileMenu();
+  injectStars();
+  setupFadeIn();
+});
+</script>
+</body>
+</html>
