@@ -5,12 +5,21 @@
   ================================================================
   ГДЕ ЧТО МЕНЯТЬ (ищи по этим меткам в коде):
 
-  1. SCHEDULE_CONFIG (в <script>, начало) — расписание свободных окон:
-     часы приёма, количество дней вперёд, занятые слоты по смещению дня.
-  2. PRICING_CONFIG (в <script>) — цены в $ (сейчас 7 / 10 / 15).
-  3. INSTAGRAM_URL (в <script>) — ссылка на Instagram (сейчас di.froggy).
-  4. I18N.ru.reviews / I18N.en.reviews — тексты отзывов-заготовок.
-  5. I18N (целиком) — словарь переводов RU/EN: все тексты сайта.
+  1. SCHEDULE / SESSION_MINUTES / TIMEZONE_LABEL (в <script>, начало) —
+     расписание окон по дням недели, длительность сессии, часовой пояс.
+  2. MANUAL_BOOKED (в <script>) — ручные брони (например, из Instagram),
+     которые нужно добавить вручную: { date: "YYYY-MM-DD", time: "HH:MM" }.
+  3. PRICING_CONFIG (в <script>) — цены в $ (сейчас 7 / 10 / 15).
+  4. INSTAGRAM_URL (в <script>) — ссылка на Instagram (сейчас di.froggy).
+  5. I18N.ru.reviews / I18N.en.reviews — тексты отзывов-заготовок.
+  6. I18N (целиком) — словарь переводов RU/EN: все тексты сайта.
+
+  ВАЖНО О БРОНЯХ: сервера нет, поэтому брони хранятся в localStorage
+  браузера клиента — видны только на его устройстве и не синхронизируются
+  между посетителями или вкладками других людей. Для настоящей общей
+  синхронизации понадобится бэкенд (например, Google Apps Script или
+  Firebase). Функции loadBookings() / saveBooking() ниже — простые
+  заглушки на localStorage, их легко заменить на запросы к такому бэкенду.
   ================================================================
 -->
 <html lang="ru">
@@ -236,6 +245,11 @@ p{margin:0 0 var(--sp-2);}
 .price-features{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:8px;flex:1;}
 .price-features li{display:flex;gap:8px;align-items:flex-start;font-size:14.5px;color:var(--c-muted-light);}
 .price-features li::before{content:"✦";color:var(--c-turquoise);flex:none;margin-top:1px;}
+.price-free-note{
+  display:flex;align-items:flex-start;gap:6px;font-size:13px;color:var(--c-gold);
+  background:rgba(240,185,77,.08);border:1px dashed rgba(240,185,77,.35);border-radius:var(--radius-sm);
+  padding:8px 10px;margin:2px 0 0;
+}
 
 /* ============ FAQ ============ */
 .faq-tabs{display:flex;gap:10px;overflow-x:auto;padding-bottom:6px;margin:var(--sp-3) 0;-webkit-overflow-scrolling:touch;scrollbar-width:thin;}
@@ -273,13 +287,23 @@ p{margin:0 0 var(--sp-2);}
 .date-chip .dow{font-size:12px;text-transform:capitalize;color:var(--c-muted-light);}
 .date-chip .dnum{font-size:17px;font-weight:700;}
 .date-chip[aria-selected="true"]{background:var(--grad-main);border-color:transparent;}
-.slots-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin:var(--sp-3) 0 var(--sp-4);}
+.date-chip.day-off{opacity:.5;}
+.date-chip .off-tag{font-size:9.5px;font-weight:700;letter-spacing:.3px;color:var(--c-gold);text-transform:uppercase;}
+.date-chip[aria-selected="true"] .off-tag{color:#fff;}
+.booking-meta{margin:2px 0 var(--sp-2);}
+.booking-meta p{margin:0 0 4px;font-size:13.5px;}
+.slots-grid{display:flex;flex-wrap:wrap;gap:10px;margin:var(--sp-2) 0 4px;}
 .slot-btn{
-  min-height:44px;border-radius:var(--radius-sm);border:1.5px solid rgba(255,255,255,.18);
-  background:rgba(255,255,255,.05);color:var(--c-text-light);font-weight:600;cursor:pointer;font-size:15px;
+  flex:1 1 150px;max-width:220px;min-height:44px;border-radius:var(--radius-sm);border:1.5px solid rgba(255,255,255,.18);
+  background:rgba(255,255,255,.05);color:var(--c-text-light);font-weight:600;cursor:pointer;font-size:14.5px;white-space:nowrap;
 }
 .slot-btn[aria-selected="true"]{background:var(--grad-main);border-color:transparent;}
-.slot-btn:disabled{opacity:.3;cursor:not-allowed;text-decoration:line-through;}
+.slot-btn:disabled{opacity:.35;cursor:not-allowed;text-decoration:line-through;}
+.slots-message{
+  margin:4px 0 var(--sp-2);color:var(--c-muted-light);font-size:14.5px;background:rgba(255,255,255,.05);
+  border:1px dashed rgba(255,255,255,.25);border-radius:var(--radius-sm);padding:14px 16px;text-align:center;
+}
+.slots-message[hidden]{display:none;}
 .booking-form{display:flex;flex-direction:column;gap:var(--sp-2);max-width:620px;margin-top:var(--sp-4);}
 .field{display:flex;flex-direction:column;gap:6px;}
 .field label{font-size:14px;font-weight:600;color:var(--c-muted-light);}
@@ -299,13 +323,72 @@ p{margin:0 0 var(--sp-2);}
   background:rgba(255,255,255,.06);border:1px dashed rgba(255,255,255,.25);border-radius:var(--radius-sm);
   padding:12px 16px;font-size:14.5px;color:var(--c-muted-light);
 }
-.confirmation-screen{
-  margin-top:var(--sp-4);background:rgba(255,255,255,.07);border:1.5px solid rgba(240,185,77,.4);
-  border-radius:var(--radius-lg);padding:var(--sp-4);text-align:center;
+
+/* ============ SUCCESS MODAL ============ */
+.modal-overlay{
+  position:fixed;inset:0;z-index:200;display:flex;align-items:center;justify-content:center;
+  background:rgba(10,4,20,.72);backdrop-filter:blur(6px);opacity:0;transition:opacity .22s ease;padding:0;
 }
-.confirmation-screen.hidden,.booking-form.hidden{display:none;}
-.confirmation-screen .icon-big{font-size:46px;margin-bottom:10px;}
-.copy-note{font-size:13px;color:var(--c-gold);margin-top:8px;}
+.modal-overlay[hidden]{display:none;}
+.modal-overlay.open{opacity:1;}
+.modal-dialog{
+  position:relative;background:var(--grad-dark);color:var(--c-text-light);
+  width:100%;min-height:100dvh;max-height:100dvh;overflow-y:auto;
+  padding:var(--sp-6) var(--sp-3) calc(var(--sp-4) + var(--safe-b));
+  text-align:center;transform:translateY(16px) scale(.98);transition:transform .25s ease;
+}
+.modal-overlay.open .modal-dialog{transform:translateY(0) scale(1);}
+@media (min-width:640px){
+  .modal-dialog{
+    width:min(480px,92vw);min-height:auto;max-height:90vh;border-radius:var(--radius-lg);
+    padding:var(--sp-5) var(--sp-4) var(--sp-4);box-shadow:0 20px 60px rgba(0,0,0,.45);
+  }
+}
+.modal-close{
+  position:absolute;top:14px;right:14px;width:44px;height:44px;border-radius:50%;
+  background:rgba(255,255,255,.08);border:none;color:#fff;font-size:22px;line-height:1;cursor:pointer;
+  display:flex;align-items:center;justify-content:center;
+}
+.modal-close:hover{background:rgba(255,255,255,.18);}
+.modal-check-wrap{position:relative;width:110px;height:110px;margin:0 auto var(--sp-2);}
+.modal-check-wrap::before{
+  content:"";position:absolute;inset:-16px;border-radius:50%;
+  background:radial-gradient(circle,rgba(217,70,239,.5),transparent 70%);opacity:0;z-index:0;
+}
+.modal-overlay.open .modal-check-wrap::before{animation:pulseGlow 1.8s ease-in-out infinite;}
+@keyframes pulseGlow{0%,100%{opacity:.35;transform:scale(.9);}50%{opacity:.75;transform:scale(1.08);}}
+.modal-check{position:relative;width:100%;height:100%;z-index:1;}
+.modal-check .check-circle{fill:none;stroke:var(--c-turquoise);stroke-dasharray:340;stroke-dashoffset:340;transition:stroke-dashoffset .6s ease .1s;}
+.modal-check .check-mark{fill:none;stroke:#fff;stroke-dasharray:70;stroke-dashoffset:70;transition:stroke-dashoffset .45s ease .55s;}
+.modal-overlay.open .check-circle{stroke-dashoffset:0;}
+.modal-overlay.open .check-mark{stroke-dashoffset:0;}
+.modal-confetti{position:absolute;left:0;right:0;top:-10px;height:170px;overflow:visible;pointer-events:none;z-index:2;}
+.confetti-piece{position:absolute;top:-10px;width:8px;height:14px;border-radius:2px;opacity:1;animation:confettiFall 1.4s ease-in forwards;}
+@keyframes confettiFall{to{transform:translateY(170px) rotate(300deg);opacity:0;}}
+.modal-dialog h3{color:#fff;}
+.modal-summary{margin:var(--sp-3) 0;text-align:left;background:rgba(255,255,255,.05);border-radius:var(--radius-md);padding:4px 14px;}
+.modal-summary-row{display:flex;justify-content:space-between;gap:12px;padding:9px 0;border-bottom:1px solid rgba(255,255,255,.08);font-size:14.5px;}
+.modal-summary-row:last-child{border-bottom:none;}
+.modal-summary-row .label{color:var(--c-muted-light);}
+.modal-summary-row .value{font-weight:700;text-align:right;}
+.modal-instructions{color:var(--c-muted-light);font-size:14.5px;}
+.modal-actions{display:flex;flex-direction:column;gap:10px;margin-top:var(--sp-2);}
+.modal-actions .btn{width:100%;}
+@media (min-width:460px){
+  .modal-actions{flex-direction:row;}
+  .modal-actions .btn{flex:1;}
+}
+.modal-close-btn{margin-top:var(--sp-2);}
+
+/* ============ TOAST ============ */
+.toast{
+  position:fixed;left:50%;bottom:calc(84px + var(--safe-b));transform:translate(-50%,16px);
+  background:#1a0b2e;color:#fff;padding:12px 22px;border-radius:999px;font-size:14px;font-weight:600;
+  box-shadow:0 8px 24px rgba(0,0,0,.35);opacity:0;pointer-events:none;
+  transition:opacity .25s ease,transform .25s ease;z-index:300;border:1px solid rgba(255,255,255,.15);
+  max-width:90vw;text-align:center;
+}
+.toast.show{opacity:1;transform:translate(-50%,0);}
 
 /* ============ PROCESS ============ */
 .process-grid{display:grid;grid-template-columns:1fr;gap:var(--sp-3);margin-top:var(--sp-4);}
@@ -366,15 +449,11 @@ p{margin:0 0 var(--sp-2);}
   .mobile-sticky-bar{display:none;}
   .cards-grid{grid-template-columns:repeat(3,1fr);}
   .process-grid{grid-template-columns:repeat(4,1fr);}
-  .slots-grid{grid-template-columns:repeat(5,1fr);}
   body{padding-bottom:0;}
 }
 @media (max-width:859px){
   body{padding-bottom:calc(68px + var(--safe-b));}
   .floating-ig-btn{bottom:calc(84px + var(--safe-b));}
-}
-@media (min-width:1100px){
-  .slots-grid{grid-template-columns:repeat(6,1fr);}
 }
 </style>
 </head>
@@ -483,7 +562,12 @@ p{margin:0 0 var(--sp-2);}
       <div class="date-strip" id="date-strip" role="listbox" aria-label="Выбор даты"></div>
 
       <h3 style="margin-top:var(--sp-3);font-size:16px;" data-i18n="booking.slotsLabel">Время</h3>
+      <div class="booking-meta">
+        <p class="muted" data-i18n="booking.durationNote">Консультация длится примерно 1–1,5 часа</p>
+        <p class="muted" id="timezone-label"></p>
+      </div>
       <div class="slots-grid" id="slots-grid" role="listbox" aria-label="Выбор времени"></div>
+      <p class="slots-message" id="slots-message" hidden></p>
 
       <div class="selected-summary" id="selected-summary"></div>
 
@@ -521,17 +605,6 @@ p{margin:0 0 var(--sp-2);}
         <div class="field-error" id="err-slot"></div>
         <button type="submit" class="btn btn-primary btn-lg" id="submit-btn" data-i18n="booking.form.submitBtn">Записаться</button>
       </form>
-
-      <div class="confirmation-screen hidden" id="confirmation-screen" role="status">
-        <div class="icon-big">✨</div>
-        <h3 data-i18n="booking.confirm.title">Заявка почти готова</h3>
-        <p data-i18n="booking.confirm.text">Отправьте её мне в Direct — текст заявки уже скопирован в буфер обмена, а Instagram открыт в новой вкладке.</p>
-        <p class="copy-note" id="copy-note" data-i18n="booking.confirm.copied">Текст заявки скопирован ✓</p>
-        <a href="https://instagram.com/di.froggy" target="_blank" rel="noopener" class="btn btn-primary btn-lg" data-i18n="booking.confirm.openIg">Открыть Instagram</a>
-        <div>
-          <button type="button" class="btn btn-outline" id="confirm-back-btn" style="margin-top:14px;" data-i18n="booking.confirm.backBtn">Назад к форме</button>
-        </div>
-      </div>
     </div>
   </section>
 
@@ -585,40 +658,63 @@ p{margin:0 0 var(--sp-2);}
   <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><rect x="2" y="2" width="20" height="20" rx="6" stroke="#fff" stroke-width="1.8"/><circle cx="12" cy="12" r="4.2" stroke="#fff" stroke-width="1.8"/><circle cx="17.3" cy="6.7" r="1.2" fill="#fff"/></svg>
 </a>
 
+<!-- SUCCESS MODAL (open only after a successful booking; never navigates/opens tabs on its own) -->
+<div class="modal-overlay" id="modal-overlay" hidden>
+  <div class="modal-dialog" role="dialog" aria-modal="true" aria-labelledby="modal-title" id="modal-dialog">
+    <button type="button" class="modal-close" id="modal-close-x" data-i18n-aria="modal.closeAria" aria-label="Закрыть окно">×</button>
+    <div class="modal-check-wrap">
+      <svg class="modal-check" viewBox="0 0 120 120" aria-hidden="true">
+        <circle class="check-circle" cx="60" cy="60" r="54" stroke-width="6"/>
+        <path class="check-mark" d="M34 62 L52 80 L88 40" stroke-width="8" stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>
+      <div class="modal-confetti" id="modal-confetti" aria-hidden="true"></div>
+    </div>
+    <h3 id="modal-title" data-i18n="modal.title">Вы успешно записаны!</h3>
+    <div class="modal-summary" id="modal-summary"></div>
+    <p class="modal-instructions" data-i18n="modal.instructions">Для подтверждения отправьте заявку мне в Direct</p>
+    <div class="modal-actions">
+      <button type="button" class="btn btn-secondary" id="modal-copy-btn" data-i18n="modal.copyBtn">Скопировать заявку</button>
+      <a href="https://instagram.com/di.froggy" target="_blank" rel="noopener" class="btn btn-primary" id="modal-ig-btn" data-i18n="modal.openIgBtn">Открыть Instagram @di.froggy</a>
+    </div>
+    <button type="button" class="btn btn-outline btn-block modal-close-btn" id="modal-close-btn" data-i18n="modal.closeBtn">Закрыть</button>
+  </div>
+</div>
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+
 <script>
 "use strict";
 
-/* ================= 1. SCHEDULE_CONFIG — расписание (редактируй здесь) ================= */
-const SCHEDULE_CONFIG = {
-  startHour: 11,
-  endHour: 21,
-  daysAhead: 10,
-  // занятые часы по смещению дня от сегодняшнего (0 = сегодня, 1 = завтра, ...)
-  bookedByDayOffset: {
-    0: [11, 12, 16],
-    1: [13, 14, 19, 20],
-    2: [11, 17, 21],
-    3: [15, 16, 18],
-    4: [12, 13, 20],
-    5: [19, 20, 21],
-    6: [11, 14, 15],
-    7: [16, 17, 21],
-    8: [12, 18, 19],
-    9: [13, 20]
-  }
+/* ================= 1. SCHEDULE / SESSION_MINUTES / TIMEZONE_LABEL (редактируй здесь) ================= */
+// Ключи — дни недели по JS: 0 = воскресенье, 1 = понедельник, ... 6 = суббота.
+// Каждое значение — время НАЧАЛА консультации; длительность берётся из SESSION_MINUTES.
+// Слот "19:00" в сб/вс заканчивается около 20:30 — при необходимости можно убрать.
+const SCHEDULE = {
+  1: ["14:00", "15:30"],          // понедельник: окно 14:00–17:00
+  2: [],                          // вторник: запись закрыта
+  3: ["14:00", "15:30"],          // среда: окно 14:00–17:00
+  4: ["15:00", "16:30"],          // четверг: окно 15:00–18:00
+  5: [],                          // пятница: запись закрыта
+  6: ["16:00", "17:30", "19:00"], // суббота: 16:00–20:00 (+)
+  0: ["16:00", "17:30", "19:00"]  // воскресенье: 16:00–20:00 (+)
 };
+const SESSION_MINUTES = 90;
+const TIMEZONE_LABEL = { ru: "время по Астане, UTC+5", en: "Astana time, UTC+5" };
 
-/* ================= 2. PRICING_CONFIG — цены (редактируй здесь) ================= */
+/* ================= 2. MANUAL_BOOKED — ручные брони (редактируй здесь) ================= */
+// Например, брони, пришедшие напрямую в Instagram: { date: "2026-10-12", time: "16:00" }
+const MANUAL_BOOKED = [];
+
+/* ================= 3. PRICING_CONFIG — цены (редактируй здесь) ================= */
 const PRICING_CONFIG = [
   { id: "q1", priceUSD: 7 },
   { id: "q3", priceUSD: 10, badge: "popular" },
   { id: "q5", priceUSD: 15, badge: "best", perQuestionUSD: 3 }
 ];
 
-/* ================= 3. INSTAGRAM_URL — ссылка (редактируй здесь) ================= */
+/* ================= 4. INSTAGRAM_URL — ссылка (редактируй здесь) ================= */
 const INSTAGRAM_URL = "https://instagram.com/di.froggy";
 
-/* ================= 4-5. I18N — словарь переводов и отзывы (редактируй здесь) ================= */
+/* ================= 5-6. I18N — словарь переводов и отзывы (редактируй здесь) ================= */
 const I18N = {
   ru: {
     docTitle: "di.froggy — Таро-консультации онлайн",
@@ -657,10 +753,11 @@ const I18N = {
       selectBtn: "Выбрать",
       perQuestion: "$3 за вопрос",
       badgeLabels: { popular: "Популярный", best: "Лучшая цена" },
+      freeNote: "Сигнификатор и совет от карт — всегда бесплатно на каждой консультации",
       items: {
         q1: { title: "1 вопрос", features: ["Ответ текстом или голосовым", "Расклад под ваш вопрос", "Краткая трактовка"] },
-        q3: { title: "3 вопроса", features: ["Ответ текстом или голосовым", "Расклад под каждый вопрос", "Краткая трактовка по каждому"] },
-        q5: { title: "5 вопросов", features: ["Ответ текстом или голосовым", "Расклад под каждый вопрос", "Подробная трактовка по каждому"] }
+        q3: { title: "3 вопроса", features: ["Ответ текстом или голосовым", "Расклад под каждый вопрос", "Краткая трактовка по каждому", "Подробно трактую каждый вопрос"] },
+        q5: { title: "5 вопросов", features: ["Ответ текстом или голосовым", "Расклад под каждый вопрос", "Подробная трактовка по каждому", "Подробно трактую каждый вопрос", "Делаю уточнения к каждому вопросу"] }
       }
     },
     faq: {
@@ -709,6 +806,10 @@ const I18N = {
       subheading: "Выберите дату и время — слоты обновляются каждую неделю.",
       dateLabel: "Дата", slotsLabel: "Время",
       slotBooked: "занято",
+      dayOffShort: "Вых.",
+      dayOff: "Выходной — в этот день записи нет.",
+      allBooked: "На этот день все окна заняты, выберите другую дату",
+      durationNote: "Консультация длится примерно 1–1,5 часа",
       summaryEmpty: "Выберите дату и время для записи.",
       summaryDate: "Дата", summaryTime: "Время", summaryTariff: "Тариф",
       form: {
@@ -727,16 +828,21 @@ const I18N = {
         category: "Выберите категорию вопроса",
         question: "Опишите ваш вопрос (минимум 5 символов)",
         consent: "Нужно согласие на обработку данных",
-        slot: "Выберите дату и время"
-      },
-      confirm: {
-        title: "Заявка почти готова",
-        text: "Отправьте её мне в Direct — текст заявки уже скопирован в буфер обмена, а Instagram открыт в новой вкладке.",
-        copied: "Текст заявки скопирован ✓",
-        copyFailed: "Не удалось скопировать автоматически — текст заявки показан ниже, скопируйте вручную.",
-        openIg: "Открыть Instagram", backBtn: "Назад к форме"
+        slot: "Выберите дату и время",
+        slotTaken: "Это время только что заняли — выберите другое"
       },
       requestTemplate: (d) => `Здравствуйте! Хочу записаться на расклад ✨\n\nИмя: ${d.name}\nКонтакт: ${d.contact}\nТариф: ${d.tariff}\nКатегория: ${d.category}\nДата: ${d.date}\nВремя: ${d.time}\n\nВопрос: ${d.question}`
+    },
+    modal: {
+      title: "Вы успешно записаны!",
+      instructions: "Для подтверждения отправьте заявку мне в Direct",
+      summaryDate: "Дата", summaryTime: "Время", summaryTariff: "Тариф", summaryName: "Имя",
+      copyBtn: "Скопировать заявку",
+      openIgBtn: "Открыть Instagram @di.froggy",
+      closeBtn: "Закрыть",
+      closeAria: "Закрыть окно",
+      toastCopied: "Скопировано ✓",
+      toastCopyFailed: "Не удалось скопировать — текст заявки см. в поле выше"
     },
     process: {
       heading: "Как проходит консультация",
@@ -799,10 +905,11 @@ const I18N = {
       selectBtn: "Choose",
       perQuestion: "$3 per question",
       badgeLabels: { popular: "Most popular", best: "Best value" },
+      freeNote: "Significator and card advice are always free in every consultation",
       items: {
         q1: { title: "1 question", features: ["Text or voice-note answer", "A reading tailored to your question", "A concise interpretation"] },
-        q3: { title: "3 questions", features: ["Text or voice-note answer", "A reading for each question", "A concise interpretation for each"] },
-        q5: { title: "5 questions", features: ["Text or voice-note answer", "A reading for each question", "A detailed interpretation for each"] }
+        q3: { title: "3 questions", features: ["Text or voice-note answer", "A reading for each question", "A concise interpretation for each", "A detailed interpretation of every question"] },
+        q5: { title: "5 questions", features: ["Text or voice-note answer", "A reading for each question", "A detailed interpretation for each", "A detailed interpretation of every question", "Clarifying follow-ups for every question"] }
       }
     },
     faq: {
@@ -851,6 +958,10 @@ const I18N = {
       subheading: "Pick a date and time — the schedule refreshes every week.",
       dateLabel: "Date", slotsLabel: "Time",
       slotBooked: "booked",
+      dayOffShort: "Off",
+      dayOff: "Day off — no bookings on this day.",
+      allBooked: "All slots for this day are booked — please pick another date",
+      durationNote: "A consultation takes about 1–1.5 hours",
       summaryEmpty: "Pick a date and time to book.",
       summaryDate: "Date", summaryTime: "Time", summaryTariff: "Package",
       form: {
@@ -869,16 +980,21 @@ const I18N = {
         category: "Please choose a question category",
         question: "Please describe your question (at least 5 characters)",
         consent: "Please agree to data processing to continue",
-        slot: "Please pick a date and time"
-      },
-      confirm: {
-        title: "Your request is almost ready",
-        text: "Send it to me on Direct — the request text is already copied to your clipboard, and Instagram opened in a new tab.",
-        copied: "Request text copied ✓",
-        copyFailed: "Couldn't copy automatically — the request text is shown below, please copy it manually.",
-        openIg: "Open Instagram", backBtn: "Back to form"
+        slot: "Please pick a date and time",
+        slotTaken: "This slot was just booked — please choose another"
       },
       requestTemplate: (d) => `Hi! I'd like to book a reading ✨\n\nName: ${d.name}\nContact: ${d.contact}\nPackage: ${d.tariff}\nCategory: ${d.category}\nDate: ${d.date}\nTime: ${d.time}\n\nQuestion: ${d.question}`
+    },
+    modal: {
+      title: "You're successfully booked!",
+      instructions: "To confirm, please send this request to me on Direct",
+      summaryDate: "Date", summaryTime: "Time", summaryTariff: "Package", summaryName: "Name",
+      copyBtn: "Copy request",
+      openIgBtn: "Open Instagram @di.froggy",
+      closeBtn: "Close",
+      closeAria: "Close dialog",
+      toastCopied: "Copied ✓",
+      toastCopyFailed: "Couldn't copy — see the request text in the field above"
     },
     process: {
       heading: "How a session works",
@@ -908,8 +1024,10 @@ const I18N = {
 /* ================= STATE ================= */
 let currentLang = "ru";
 let selectedDayOffset = null;
-let selectedHour = null;
+let selectedHour = null;      // start time string, e.g. "14:00"
 let selectedPricingId = null;
+let lastFocusedEl = null;
+let currentRequestText = "";
 
 /* ================= HELPERS ================= */
 function t(lang){ return I18N[lang]; }
@@ -927,11 +1045,50 @@ function saveLang(lang){
   try{ localStorage.setItem("df_lang", lang); }catch(e){ /* storage blocked — ignore */ }
 }
 
-function formatDate(date, lang){
-  return new Intl.DateTimeFormat(lang === "en" ? "en-US" : "ru-RU", { weekday: "short", day: "numeric", month: "short" }).format(date);
-}
 function formatDateLong(date, lang){
   return new Intl.DateTimeFormat(lang === "en" ? "en-US" : "ru-RU", { weekday: "long", day: "numeric", month: "long" }).format(date);
+}
+
+function dateKey(d){
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, "0");
+  const day = String(d.getDate()).padStart(2, "0");
+  return y + "-" + m + "-" + day;
+}
+
+function addMinutesToTime(timeStr, minutes){
+  const parts = timeStr.split(":").map(Number);
+  const total = parts[0] * 60 + parts[1] + minutes;
+  const wrapped = ((total % 1440) + 1440) % 1440;
+  const hh = Math.floor(wrapped / 60);
+  const mm = wrapped % 60;
+  return String(hh).padStart(2, "0") + ":" + String(mm).padStart(2, "0");
+}
+
+function timeRangeLabel(start){
+  return start + "–" + addMinutesToTime(start, SESSION_MINUTES);
+}
+
+/* ================= BOOKINGS STORAGE (localStorage-only — see note at top of file) ================= */
+function loadBookings(){
+  try{
+    const raw = localStorage.getItem("bookings");
+    const arr = raw ? JSON.parse(raw) : [];
+    return Array.isArray(arr) ? arr : [];
+  }catch(e){ return []; }
+}
+
+function saveBooking(entry){
+  try{
+    const list = loadBookings();
+    list.push(entry);
+    localStorage.setItem("bookings", JSON.stringify(list));
+  }catch(e){ /* storage blocked — booking still reflected in this session's UI */ }
+}
+
+function isSlotBooked(dKey, timeStr){
+  const all = loadBookings().concat(MANUAL_BOOKED);
+  return all.some(function(b){ return b.date === dKey && b.time === timeStr; });
 }
 
 const SVG_FLAG_RU = '<svg viewBox="0 0 60 40" xmlns="http://www.w3.org/2000/svg"><rect width="60" height="40" fill="#fff"/><rect y="13.33" width="60" height="13.34" fill="#0039a6"/><rect y="26.67" width="60" height="13.33" fill="#d52b1e"/></svg>';
@@ -966,6 +1123,7 @@ function applyStaticTexts(lang){
   flagEl.innerHTML = lang === "ru" ? SVG_FLAG_RU : SVG_FLAG_EN;
   document.getElementById("lang-code").textContent = lang === "ru" ? "RU" : "EN";
   document.getElementById("burger-btn").setAttribute("aria-label", lang === "ru" ? "Открыть меню" : "Open menu");
+  document.getElementById("timezone-label").textContent = "🕒 " + TIMEZONE_LABEL[lang];
 }
 
 function resolveKey(obj, path){
@@ -998,12 +1156,14 @@ function renderPricing(lang){
     if (cfg.badge) badgeHtml = '<span class="price-badge">' + escapeHtml(dict.pricing.badgeLabels[cfg.badge]) + '</span>';
     let perQHtml = cfg.perQuestionUSD ? '<div class="price-per">' + escapeHtml(dict.pricing.perQuestion) + '</div>' : '';
     const featuresHtml = item.features.map(function(f){ return "<li>" + escapeHtml(f) + "</li>"; }).join("");
+    const freeNoteHtml = '<div class="price-free-note">✨ <span>' + escapeHtml(dict.pricing.freeNote) + '</span></div>';
     card.innerHTML =
       badgeHtml +
       "<h3>" + escapeHtml(item.title) + "</h3>" +
       '<div class="price-amount">$' + cfg.priceUSD + "</div>" +
       perQHtml +
       '<ul class="price-features">' + featuresHtml + "</ul>" +
+      freeNoteHtml +
       '<button type="button" class="btn btn-primary btn-block price-select-btn" data-pricing-id="' + cfg.id + '">' + escapeHtml(dict.pricing.selectBtn) + "</button>";
     container.appendChild(card);
   });
@@ -1108,7 +1268,7 @@ function buildDateList(){
   const list = [];
   const today = new Date();
   today.setHours(0, 0, 0, 0);
-  for (let i = 0; i < SCHEDULE_CONFIG.daysAhead; i++){
+  for (let i = 0; i < 14; i++){
     const d = new Date(today);
     d.setDate(d.getDate() + i);
     list.push({ offset: i, date: d });
@@ -1117,19 +1277,27 @@ function buildDateList(){
 }
 const DATE_LIST = buildDateList();
 
+function isDayOff(date){
+  const weekday = date.getDay();
+  const slots = SCHEDULE[weekday];
+  return !slots || slots.length === 0;
+}
+
 function renderDateStrip(lang){
+  const dict = t(lang);
   const container = document.getElementById("date-strip");
   container.innerHTML = "";
   if (selectedDayOffset === null) selectedDayOffset = DATE_LIST[0].offset;
   DATE_LIST.forEach(function(entry){
     const btn = document.createElement("button");
     btn.type = "button";
-    btn.className = "date-chip";
+    btn.className = "date-chip" + (isDayOff(entry.date) ? " day-off" : "");
     btn.setAttribute("role", "option");
     btn.setAttribute("aria-selected", String(entry.offset === selectedDayOffset));
     const dow = new Intl.DateTimeFormat(lang === "en" ? "en-US" : "ru-RU", { weekday: "short" }).format(entry.date);
     const dnum = new Intl.DateTimeFormat(lang === "en" ? "en-US" : "ru-RU", { day: "numeric", month: "short" }).format(entry.date);
-    btn.innerHTML = '<span class="dow">' + escapeHtml(dow) + '</span><span class="dnum">' + escapeHtml(dnum) + "</span>";
+    const offTag = isDayOff(entry.date) ? '<span class="off-tag">' + escapeHtml(dict.booking.dayOffShort) + '</span>' : "";
+    btn.innerHTML = '<span class="dow">' + escapeHtml(dow) + '</span><span class="dnum">' + escapeHtml(dnum) + "</span>" + offTag;
     btn.addEventListener("click", function(){
       selectedDayOffset = entry.offset;
       selectedHour = null;
@@ -1144,39 +1312,72 @@ function renderDateStrip(lang){
 function renderSlots(lang){
   const dict = t(lang);
   const container = document.getElementById("slots-grid");
+  const msgEl = document.getElementById("slots-message");
   container.innerHTML = "";
-  const booked = SCHEDULE_CONFIG.bookedByDayOffset[selectedDayOffset] || [];
-  for (let h = SCHEDULE_CONFIG.startHour; h <= SCHEDULE_CONFIG.endHour; h++){
-    const isBooked = booked.indexOf(h) !== -1;
+  container.hidden = false;
+  msgEl.hidden = true;
+  msgEl.textContent = "";
+
+  const entry = DATE_LIST.find(function(d){ return d.offset === selectedDayOffset; });
+  const weekday = entry.date.getDay();
+  const starts = SCHEDULE[weekday] || [];
+
+  if (!starts.length){
+    container.hidden = true;
+    msgEl.hidden = false;
+    msgEl.textContent = dict.booking.dayOff;
+    return;
+  }
+
+  const dKey = dateKey(entry.date);
+  const now = new Date();
+  const isToday = dKey === dateKey(now);
+  let anyAvailable = false;
+
+  starts.forEach(function(start){
+    const label = timeRangeLabel(start);
+    const parts = start.split(":").map(Number);
+    const slotDateTime = new Date(entry.date);
+    slotDateTime.setHours(parts[0], parts[1], 0, 0);
+    const isPast = isToday && slotDateTime.getTime() <= now.getTime();
+    const booked = isSlotBooked(dKey, start);
+    const disabled = isPast || booked;
+    if (!disabled) anyAvailable = true;
+
     const btn = document.createElement("button");
     btn.type = "button";
     btn.className = "slot-btn";
     btn.setAttribute("role", "option");
-    btn.disabled = isBooked;
-    btn.setAttribute("aria-selected", String(h === selectedHour));
-    const label = String(h).padStart(2, "0") + ":00";
-    btn.textContent = isBooked ? label + " · " + dict.booking.slotBooked : label;
-    if (!isBooked){
+    btn.disabled = disabled;
+    btn.setAttribute("aria-selected", String(start === selectedHour));
+    btn.textContent = booked ? label + " · " + dict.booking.slotBooked : label;
+    if (!disabled){
       btn.addEventListener("click", function(){
-        selectedHour = h;
+        selectedHour = start;
         renderSlots(currentLang);
         updateSelectedSummary();
       });
     }
     container.appendChild(btn);
+  });
+
+  if (!anyAvailable){
+    container.hidden = true;
+    msgEl.hidden = false;
+    msgEl.textContent = dict.booking.allBooked;
   }
 }
 
 function updateSelectedSummary(){
   const dict = t(currentLang);
   const el = document.getElementById("selected-summary");
-  if (selectedDayOffset === null || selectedHour === null){
+  if (selectedDayOffset === null || !selectedHour){
     el.textContent = dict.booking.summaryEmpty;
     return;
   }
   const entry = DATE_LIST.find(function(d){ return d.offset === selectedDayOffset; });
   const dateLabel = formatDateLong(entry.date, currentLang);
-  const timeLabel = String(selectedHour).padStart(2, "0") + ":00";
+  const timeLabel = timeRangeLabel(selectedHour);
   let tariffLabel = "—";
   if (selectedPricingId){
     const cfg = PRICING_CONFIG.find(function(c){ return c.id === selectedPricingId; });
@@ -1267,9 +1468,21 @@ function handleFormSubmit(ev){
   if (!category){ setError("category", dict.booking.errors.category); valid = false; }
   if (question.length < 5){ setError("question", dict.booking.errors.question); valid = false; }
   if (!consent){ setError("consent", dict.booking.errors.consent); valid = false; }
-  if (selectedDayOffset === null || selectedHour === null){ setError("slot", dict.booking.errors.slot); valid = false; }
+  if (selectedDayOffset === null || !selectedHour){ setError("slot", dict.booking.errors.slot); valid = false; }
 
   if (!valid) return;
+
+  const entry = DATE_LIST.find(function(d){ return d.offset === selectedDayOffset; });
+  const dKey = dateKey(entry.date);
+
+  // Re-check availability right before booking (e.g. another tab/device booked it meanwhile).
+  if (isSlotBooked(dKey, selectedHour)){
+    setError("slot", dict.booking.errors.slotTaken);
+    selectedHour = null;
+    renderSlots(currentLang);
+    updateSelectedSummary();
+    return;
+  }
 
   selectedPricingId = tariff;
 
@@ -1277,14 +1490,8 @@ function handleFormSubmit(ev){
   submitBtn.classList.add("loading");
   submitBtn.disabled = true;
 
-  // Opened synchronously (still inside the click's user-gesture context) so
-  // browser popup blockers don't swallow it — async work below must not precede this.
-  const igWindow = window.open("", "_blank", "noopener");
-  if (igWindow) igWindow.opener = null;
-
-  const entry = DATE_LIST.find(function(d){ return d.offset === selectedDayOffset; });
   const dateLabel = formatDateLong(entry.date, currentLang);
-  const timeLabel = String(selectedHour).padStart(2, "0") + ":00";
+  const timeLabel = timeRangeLabel(selectedHour);
   const tariffLabel = dict.pricing.items[tariff].title + " — $" + PRICING_CONFIG.find(function(c){ return c.id === tariff; }).priceUSD;
   const categoryLabel = dict.faq.categories.find(function(c){ return c.id === category; }).title;
 
@@ -1293,15 +1500,21 @@ function handleFormSubmit(ev){
     date: dateLabel, time: timeLabel, question: question
   });
 
+  const bookedTime = selectedHour;
+
+  // Loading state shown for ~1.2s before confirming — no navigation, no tab opened.
   setTimeout(function(){
-    copyToClipboard(requestText).then(function(success){
-      submitBtn.classList.remove("loading");
-      submitBtn.disabled = false;
-      showConfirmation(success, requestText);
-      if (igWindow) igWindow.location.href = INSTAGRAM_URL;
-      else window.open(INSTAGRAM_URL, "_blank", "noopener");
-    });
-  }, 400);
+    saveBooking({ date: dKey, time: bookedTime });
+
+    submitBtn.classList.remove("loading");
+    submitBtn.disabled = false;
+
+    // Slot becomes "booked" immediately, even while the modal is open.
+    selectedHour = null;
+    renderSlots(currentLang);
+
+    openSuccessModal({ name: name, dateLabel: dateLabel, timeLabel: timeLabel, tariffLabel: tariffLabel, requestText: requestText });
+  }, 1200);
 }
 
 function copyToClipboard(text){
@@ -1325,19 +1538,100 @@ function fallbackCopy(text){
   }catch(e){ return false; }
 }
 
-function showConfirmation(copySuccess, requestText){
-  const dict = t(currentLang);
-  document.getElementById("booking-form").classList.add("hidden");
-  const confirmEl = document.getElementById("confirmation-screen");
-  confirmEl.classList.remove("hidden");
-  const copyNote = document.getElementById("copy-note");
-  copyNote.textContent = copySuccess ? dict.booking.confirm.copied : dict.booking.confirm.copyFailed + "\n\n" + requestText;
-  confirmEl.scrollIntoView({ behavior: "smooth", block: "center" });
+function showToast(message){
+  const toast = document.getElementById("toast");
+  toast.textContent = message;
+  toast.classList.add("show");
+  clearTimeout(showToast._timer);
+  showToast._timer = setTimeout(function(){ toast.classList.remove("show"); }, 2200);
 }
 
-function resetBookingUI(){
-  document.getElementById("confirmation-screen").classList.add("hidden");
-  document.getElementById("booking-form").classList.remove("hidden");
+/* ================= SUCCESS MODAL ================= */
+function modalSummaryRow(label, value){
+  return '<div class="modal-summary-row"><span class="label">' + escapeHtml(label) + '</span><span class="value">' + escapeHtml(value) + "</span></div>";
+}
+
+function spawnConfetti(){
+  const container = document.getElementById("modal-confetti");
+  container.innerHTML = "";
+  const reduceMotion = window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+  if (reduceMotion) return;
+  const colors = ["#d946ef", "#22d3ee", "#f0b94d", "#7c3aed", "#ffffff"];
+  for (let i = 0; i < 26; i++){
+    const piece = document.createElement("span");
+    piece.className = "confetti-piece";
+    piece.style.left = (Math.random() * 100) + "%";
+    piece.style.background = colors[Math.floor(Math.random() * colors.length)];
+    piece.style.animationDelay = (Math.random() * 0.3) + "s";
+    piece.style.animationDuration = (1.1 + Math.random() * 0.8) + "s";
+    piece.style.transform = "rotate(" + Math.floor(Math.random() * 360) + "deg)";
+    container.appendChild(piece);
+  }
+}
+
+function getModalFocusable(){
+  const dialog = document.getElementById("modal-dialog");
+  return Array.prototype.slice.call(dialog.querySelectorAll("button, a[href]")).filter(function(el){ return !el.disabled; });
+}
+
+function onModalKeydown(e){
+  if (e.key === "Escape"){
+    closeModal();
+    return;
+  }
+  if (e.key === "Tab"){
+    const focusable = getModalFocusable();
+    if (!focusable.length) return;
+    const first = focusable[0];
+    const last = focusable[focusable.length - 1];
+    if (e.shiftKey && document.activeElement === first){
+      e.preventDefault();
+      last.focus();
+    } else if (!e.shiftKey && document.activeElement === last){
+      e.preventDefault();
+      first.focus();
+    }
+  }
+}
+
+function openSuccessModal(data){
+  const dict = t(currentLang);
+  lastFocusedEl = document.activeElement;
+  currentRequestText = data.requestText;
+
+  document.getElementById("modal-summary").innerHTML =
+    modalSummaryRow(dict.modal.summaryDate, data.dateLabel) +
+    modalSummaryRow(dict.modal.summaryTime, data.timeLabel) +
+    modalSummaryRow(dict.modal.summaryTariff, data.tariffLabel) +
+    modalSummaryRow(dict.modal.summaryName, data.name);
+
+  const overlay = document.getElementById("modal-overlay");
+  overlay.hidden = false;
+  spawnConfetti();
+  requestAnimationFrame(function(){ overlay.classList.add("open"); });
+  document.addEventListener("keydown", onModalKeydown);
+
+  const focusable = getModalFocusable();
+  if (focusable.length) focusable[0].focus();
+}
+
+function closeModal(){
+  const overlay = document.getElementById("modal-overlay");
+  overlay.classList.remove("open");
+  document.removeEventListener("keydown", onModalKeydown);
+  setTimeout(function(){
+    overlay.hidden = true;
+    document.getElementById("modal-confetti").innerHTML = "";
+  }, 220);
+
+  if (lastFocusedEl && typeof lastFocusedEl.focus === "function") lastFocusedEl.focus();
+
+  // Clear the form only now, after the user has closed the confirmation.
+  document.getElementById("booking-form").reset();
+  clearErrors();
+  selectedPricingId = null;
+  populateFormSelects(currentLang);
+  updateSelectedSummary();
 }
 
 /* ================= LANGUAGE SWITCH ================= */
@@ -1421,11 +1715,22 @@ document.addEventListener("DOMContentLoaded", function(){
   });
 
   document.getElementById("booking-form").addEventListener("submit", handleFormSubmit);
-  document.getElementById("confirm-back-btn").addEventListener("click", resetBookingUI);
   document.getElementById("f-tariff").addEventListener("change", function(ev){
     selectedPricingId = ev.target.value || null;
     updateSelectedSummary();
   });
+
+  document.getElementById("modal-close-x").addEventListener("click", closeModal);
+  document.getElementById("modal-close-btn").addEventListener("click", closeModal);
+  document.getElementById("modal-overlay").addEventListener("click", function(e){
+    if (e.target === this) closeModal();
+  });
+  document.getElementById("modal-copy-btn").addEventListener("click", function(){
+    copyToClipboard(currentRequestText).then(function(success){
+      showToast(success ? t(currentLang).modal.toastCopied : t(currentLang).modal.toastCopyFailed);
+    });
+  });
+  // "Открыть Instagram" is a plain <a target="_blank">: it navigates only on an explicit user click.
 
   setupMobileMenu();
   injectStars();
